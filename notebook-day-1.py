@@ -867,7 +867,8 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We assume that initially
+    We assume that initially we have
+
 
     $$
     x(0)=0,
