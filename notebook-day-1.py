@@ -71,7 +71,7 @@ def _():
     import numpy as np
     import numpy.linalg as la
 
-    return np, sci
+    return np, plt, sci
 
 
 @app.cell(hide_code=True)
@@ -622,7 +622,7 @@ def _(F, sci):
 
         return result.sol
 
-    return
+    return (redstart_solve,)
 
 
 @app.cell(hide_code=True)
@@ -639,8 +639,216 @@ def _(mo):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Freefall test
+
+    In this scenario, the booster is in free fall. This means that the reactor is turned off:
+
+    $$
+    f = 0.
+    $$
+
+    Therefore, the only force acting on the booster is gravity. The vertical equation of motion becomes
+
+    $$
+    \ddot{y} = -g.
+    $$
+
+    Since in this model we have
+
+    $$
+    g = 1,
+    $$
+
+    we get
+
+    $$
+    \ddot{y} = -1.
+    $$
+
+    The initial conditions of the free fall example are
+
+    $$
+    y(0) = 10
+    $$
+
+    and
+
+    $$
+    \dot{y}(0) = 0.
+    $$
+
+    By integrating the acceleration once, we obtain the vertical velocity:
+
+    $$
+    \dot{y}(t) = -t + C_1.
+    $$
+
+    Using the initial condition \(\dot{y}(0)=0\), we get
+
+    $$
+    0 = C_1.
+    $$
+
+    Therefore,
+
+    $$
+    \dot{y}(t) = -t.
+    $$
+
+    By integrating again, we obtain the vertical position:
+
+    $$
+    y(t) = -\frac{1}{2}t^2 + C_2.
+    $$
+
+    Using the initial condition \(y(0)=10\), we get
+
+    $$
+    10 = C_2.
+    $$
+
+    Hence,
+
+    $$
+    y(t) = 10 - \frac{1}{2}t^2.
+    $$
+
+    The booster touches the ground when its lower end reaches the ground level \(y=0\).
+
+    Since \(y(t)\) represents the height of the center of mass and the booster has total length \(\ell\), the lower end is located at a distance \(\ell/2\) below the center of mass.
+
+    Therefore, the booster is at ground level when
+
+    $$
+    y(t) = \frac{\ell}{2}.
+    $$
+
+    In this notebook, we have
+
+    $$
+    \ell = 2.
+    $$
+
+    Thus,
+
+    $$
+    \frac{\ell}{2} = 1.
+    $$
+
+    We must solve
+
+    $$
+    10 - \frac{1}{2}t^2 = 1.
+    $$
+
+    This gives
+
+    $$
+    \frac{1}{2}t^2 = 9.
+    $$
+
+    Therefore,
+
+    $$
+    t^2 = 18.
+    $$
+
+    Hence, the theoretical crossing time is
+
+    $$
+    t = \sqrt{18}.
+    $$
+
+    Numerically,
+
+    $$
+    t \approx 4.243.
+    $$
+
+    So, in the free fall scenario, the center of mass should reach the height
+
+    $$
+    y = \frac{\ell}{2}
+    $$
+
+    at approximately
+
+    $$
+    t = 4.243.
+    $$
+    """)
+    return
+
+
 @app.cell
-def _():
+def _(l, np, plt, redstart_solve):
+    def free_fall_example():
+        t_span = [0.0, 5.0]
+
+        y0 = [
+            0.0,   # x(0)
+            0.0,   # vx(0)
+            10.0,  # y(0)
+            0.0,   # vy(0)
+            0.0,   # theta(0)
+            0.0,   # omega(0)
+        ]
+
+        def f_phi(t, y):
+            return np.array([0.0, 0.0])
+
+        sol = redstart_solve(t_span, y0, f_phi)
+
+        t = np.linspace(t_span[0], t_span[1], 1000)
+        states = sol(t)
+
+        y_t = states[2]
+
+        theoretical_crossing_time = np.sqrt(18)
+
+        plt.figure(figsize=(8, 5))
+
+        plt.plot(
+            t,
+            y_t,
+            label=r"$y(t)$",
+        )
+
+        plt.axhline(
+            l / 2,
+            color="grey",
+            linestyle="--",
+            label=r"$y=\ell/2$",
+        )
+
+        plt.axvline(
+            theoretical_crossing_time,
+            color="black",
+            linestyle=":",
+            label=rf"$t=\sqrt{{18}}\approx {theoretical_crossing_time:.3f}$",
+        )
+
+        plt.title("Free Fall")
+        plt.xlabel("time $t$")
+        plt.ylabel("height of the center of mass $y(t)$")
+        plt.grid(True)
+        plt.legend()
+
+        return plt.gcf()
+
+
+    free_fall_example()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The numerical simulation is consistent with the theoretical result: the curve \(y(t)\) crosses the height \(y=\ell/2\) at approximately \(t=\sqrt{18}\approx 4.243\).
+    """)
     return
 
 
