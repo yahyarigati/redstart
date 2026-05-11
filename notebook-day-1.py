@@ -642,8 +642,6 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Freefall test
-
     In this scenario, the booster is in free fall. This means that the reactor is turned off:
 
     $$
