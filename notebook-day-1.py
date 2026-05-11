@@ -141,7 +141,7 @@ def _():
     g = 1.0      # gravity constant
     M = 1.0      # booster mass
     l = 2.0      # length of the booster
-    return M, l
+    return M, g, l
 
 
 @app.cell(hide_code=True)
@@ -170,7 +170,7 @@ def _(np):
     def fy(f, theta, phi):
         return f_reactor(f, theta, phi)[1]
 
-    return
+    return fx, fy
 
 
 @app.cell(hide_code=True)
@@ -331,7 +331,7 @@ def _(mo):
 @app.cell
 def _(M, l):
     J = (1 / 12) * M * l**2
-    return
+    return (J,)
 
 
 @app.cell(hide_code=True)
@@ -406,6 +406,83 @@ def _(mo):
 
     $$
     \dot{s} = F(s, f, \phi).
+    $$
+    """)
+    return
+
+
+@app.cell
+def _(J, M, fx, fy, g, l, np):
+    def F(s, f, phi):
+        x, vx, y, vy, theta, omega = s
+
+        return np.array([
+            vx,
+            fx(f, theta, phi) / M,
+            vy,
+            fy(f, theta, phi) / M - g,
+            omega,
+            -(l * f / (2 * J)) * np.sin(phi),
+        ])
+
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    We define the state vector as
+
+    $$
+    s =
+    (x, v_x, y, v_y, \theta, \omega)
+    \in \mathbb{R}^6,
+    $$
+
+    where
+
+    $$
+    v_x = \dot{x},
+    \qquad
+    v_y = \dot{y},
+    \qquad
+    \omega = \dot{\theta}.
+    $$
+
+    Therefore, the dimension of the state space is
+
+    $$
+    n = 6.
+    $$
+
+    The system evolves according to
+
+    $$
+    \dot{s} = F(s, f, \phi).
+    $$
+
+    Using the equations of motion, we obtain
+
+    $$
+    \dot{s}
+    =
+    \begin{pmatrix}
+    \dot{x} \\
+    \dot{v}_x \\
+    \dot{y} \\
+    \dot{v}_y \\
+    \dot{\theta} \\
+    \dot{\omega}
+    \end{pmatrix}
+    =
+    \begin{pmatrix}
+    v_x \\
+    -\frac{f}{M}\sin(\theta+\phi) \\
+    v_y \\
+    \frac{f}{M}\cos(\theta+\phi)-g \\
+    \omega \\
+    -\frac{\ell f}{2J}\sin(\phi)
+    \end{pmatrix}.
     $$
     """)
     return
