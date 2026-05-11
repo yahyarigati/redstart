@@ -141,7 +141,7 @@ def _():
     l = 2.0
     M = 1.0
     g = 1.0
-    return
+    return M, l
 
 
 @app.cell(hide_code=True)
@@ -219,6 +219,24 @@ def _(mo):
 
     Compute the [moment of inertia](https://en.wikipedia.org/wiki/Moment_of_inertia) $J$ of the booster and define the corresponding Python variable `J`.
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Conidering that the diameter is negigible and the axis passing through the mass center, we have :
+
+    $J = \int_{-l/2}^{l/2} \frac{M}{L} x^2 \, dx$
+
+    $J = \frac{1}{12} M L^2$
+    """)
+    return
+
+
+@app.cell
+def _(M, l):
+    J = (1/12)*M*(l**2)
     return
 
 
