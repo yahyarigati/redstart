@@ -867,6 +867,325 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    We assume that initially
+
+    $$
+    x(0)=0,
+    \qquad
+    \dot{x}(0)=0,
+    \qquad
+    \theta(0)=0,
+    \qquad
+    \dot{\theta}(0)=0,
+    $$
+
+    and
+
+    $$
+    y(0)=10,
+    \qquad
+    \dot{y}(0)=-2.
+    $$
+
+    The goal is to find a time-varying thrust \(f(t)\), applied along the booster axis, such that at final time \(t=5\),
+
+    $$
+    y(5)=\frac{\ell}{2}
+    $$
+
+    and
+
+    $$
+    \dot{y}(5)=0.
+    $$
+
+    Since the thrust is applied along the booster axis, we take
+
+    $$
+    \phi = 0.
+    $$
+
+    Moreover, if the booster remains vertical, then
+
+    $$
+    \theta = 0.
+    $$
+
+    Therefore, the vertical equation of motion becomes
+
+    $$
+    \ddot{y} = \frac{f(t)}{M} - g.
+    $$
+
+    We choose a cubic polynomial trajectory for the center of mass:
+
+    $$
+    y(t)=at^3+bt^2+ct+d.
+    $$
+
+    Using the initial conditions,
+
+    $$
+    y(0)=10
+    $$
+
+    and
+
+    $$
+    \dot{y}(0)=-2,
+    $$
+
+    we get
+
+    $$
+    d=10
+    $$
+
+    and
+
+    $$
+    c=-2.
+    $$
+
+    Therefore,
+
+    $$
+    y(t)=at^3+bt^2-2t+10.
+    $$
+
+    Its derivative is
+
+    $$
+    \dot{y}(t)=3at^2+2bt-2.
+    $$
+
+    The final conditions are
+
+    $$
+    y(5)=\frac{\ell}{2}
+    $$
+
+    and
+
+    $$
+    \dot{y}(5)=0.
+    $$
+
+    Since in this notebook
+
+    $$
+    \ell=2,
+    $$
+
+    we have
+
+    $$
+    \frac{\ell}{2}=1.
+    $$
+
+    Thus,
+
+    $$
+    y(5)=1.
+    $$
+
+    Using \(y(5)=1\), we obtain
+
+    $$
+    125a+25b-10+10=1.
+    $$
+
+    So,
+
+    $$
+    125a+25b=1.
+    $$
+
+    Using \(\dot{y}(5)=0\), we obtain
+
+    $$
+    75a+10b-2=0.
+    $$
+
+    So,
+
+    $$
+    75a+10b=2.
+    $$
+
+    We now solve the linear system
+
+    $$
+    \begin{cases}
+    125a+25b=1, \\
+    75a+10b=2.
+    \end{cases}
+    $$
+
+    The solution is
+
+    $$
+    a=0.064
+    $$
+
+    and
+
+    $$
+    b=-0.28.
+    $$
+
+    Therefore, the desired trajectory is
+
+    $$
+    y(t)=0.064t^3-0.28t^2-2t+10.
+    $$
+
+    Its second derivative is
+
+    $$
+    \ddot{y}(t)=6at+2b.
+    $$
+
+    Substituting the values of \(a\) and \(b\), we get
+
+    $$
+    \ddot{y}(t)=0.384t-0.56.
+    $$
+
+    Since
+
+    $$
+    \ddot{y}(t)=\frac{f(t)}{M}-g,
+    $$
+
+    we obtain
+
+    $$
+    f(t)=M(\ddot{y}(t)+g).
+    $$
+
+    With
+
+    $$
+    M=1
+    $$
+
+    and
+
+    $$
+    g=1,
+    $$
+
+    this gives
+
+    $$
+    f(t)=0.384t-0.56+1.
+    $$
+
+    Hence,
+
+    $$
+    f(t)=0.384t+0.44.
+    $$
+
+    This force is positive on the whole interval \([0,5]\), since
+
+    $$
+    f(0)=0.44>0
+    $$
+
+    and
+
+    $$
+    f(5)=2.36>0.
+    $$
+
+    Therefore, the thrust function
+
+    $$
+    f(t)=0.384t+0.44
+    $$
+
+    satisfies the constraint \(f(t)\geq 0\) and achieves the desired controlled landing.
+    """)
+    return
+
+
+@app.cell
+def _(l, np, plt, redstart_solve):
+    def controlled_landing_force(t):
+        return 0.384 * t + 0.44
+
+
+    def controlled_landing_example():
+        t_span = [0.0, 5.0]
+
+        y0 = [
+            0.0,    # x(0)
+            0.0,    # vx(0)
+            10.0,   # y(0)
+            -2.0,   # vy(0)
+            0.0,    # theta(0)
+            0.0,    # omega(0)
+        ]
+
+        def f_phi(t, y):
+            f = controlled_landing_force(t)
+            phi = 0.0
+            return np.array([f, phi])
+
+        sol = redstart_solve(t_span, y0, f_phi)
+
+        t = np.linspace(t_span[0], t_span[1], 1000)
+        states = sol(t)
+
+        x_t = states[0]
+        vx_t = states[1]
+        y_t = states[2]
+        vy_t = states[3]
+        theta_t = states[4]
+        omega_t = states[5]
+
+        f_t = controlled_landing_force(t)
+
+        plt.figure(figsize=(8, 5))
+        plt.plot(t, y_t, label=r"$y(t)$")
+        plt.plot(t, vy_t, label=r"$\dot{y}(t)$")
+        plt.axhline(l / 2, color="grey", linestyle="--", label=r"$y=\ell/2$")
+        plt.axhline(0, color="black", linewidth=0.8)
+        plt.title("Controlled Landing: height and vertical velocity")
+        plt.xlabel("time $t$")
+        plt.grid(True)
+        plt.legend()
+        plt.show()
+
+        plt.figure(figsize=(8, 5))
+        plt.plot(t, f_t, label=r"$f(t)$")
+        plt.title("Controlled Landing: reactor force")
+        plt.xlabel("time $t$")
+        plt.ylabel("force $f(t)$")
+        plt.grid(True)
+        plt.legend()
+        plt.show()
+
+        print("Final state at t=5:")
+        print("x(5)      =", x_t[-1])
+        print("vx(5)     =", vx_t[-1])
+        print("y(5)      =", y_t[-1])
+        print("vy(5)     =", vy_t[-1])
+        print("theta(5)  =", theta_t[-1])
+        print("omega(5)  =", omega_t[-1])
+
+        return sol
+
+
+    controlled_landing_sol = controlled_landing_example()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     # Animations
 
     It's very handy to visualize the evolution of our booster "as a movie"!
