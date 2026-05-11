@@ -642,154 +642,110 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    In this scenario, the booster is in free fall. This means that the reactor is turned off:
+    In the freefall scenario, the reactor is turned off:
 
     $$
-    f = 0.
+    f=0.
     $$
 
-    Therefore, the only force acting on the booster is gravity. The vertical equation of motion becomes
+    Therefore, the only force acting on the booster is gravity. The vertical equation of motion is
 
     $$
-    \ddot{y} = -g.
+    \ddot y = -g.
     $$
 
-    Since in this model we have
+    Since in this notebook
 
     $$
-    g = 1,
+    g=1,
     $$
 
     we get
 
     $$
-    \ddot{y} = -1.
+    \ddot y = -1.
     $$
 
-    The initial conditions of the free fall example are
+    The initial conditions are
 
     $$
-    y(0) = 10
+    y(0)=10,
+    \qquad
+    \dot y(0)=0.
     $$
 
-    and
+    By integrating once, we obtain
 
     $$
-    \dot{y}(0) = 0.
+    \dot y(t)=-t.
     $$
 
-    By integrating the acceleration once, we obtain the vertical velocity:
+    By integrating again, we obtain
 
     $$
-    \dot{y}(t) = -t + C_1.
+    y(t)=10-\frac{1}{2}t^2.
     $$
 
-    Using the initial condition \(\dot{y}(0)=0\), we get
+    The question asks when the center of mass crosses the height
 
     $$
-    0 = C_1.
+    y=\ell.
     $$
 
-    Therefore,
+    Therefore, we solve
 
     $$
-    \dot{y}(t) = -t.
+    10-\frac{1}{2}t^2=\ell.
     $$
 
-    By integrating again, we obtain the vertical position:
+    In this notebook,
 
     $$
-    y(t) = -\frac{1}{2}t^2 + C_2.
-    $$
-
-    Using the initial condition \(y(0)=10\), we get
-
-    $$
-    10 = C_2.
-    $$
-
-    Hence,
-
-    $$
-    y(t) = 10 - \frac{1}{2}t^2.
-    $$
-
-    The booster touches the ground when its lower end reaches the ground level \(y=0\).
-
-    Since \(y(t)\) represents the height of the center of mass and the booster has total length \(\ell\), the lower end is located at a distance \(\ell/2\) below the center of mass.
-
-    Therefore, the booster is at ground level when
-
-    $$
-    y(t) = \frac{\ell}{2}.
-    $$
-
-    In this notebook, we have
-
-    $$
-    \ell = 2.
+    \ell=2.
     $$
 
     Thus,
 
     $$
-    \frac{\ell}{2} = 1.
-    $$
-
-    We must solve
-
-    $$
-    10 - \frac{1}{2}t^2 = 1.
+    10-\frac{1}{2}t^2=2.
     $$
 
     This gives
 
     $$
-    \frac{1}{2}t^2 = 9.
+    \frac{1}{2}t^2=8,
     $$
 
-    Therefore,
+    so
 
     $$
-    t^2 = 18.
+    t^2=16.
     $$
 
-    Hence, the theoretical crossing time is
+    Hence,
 
     $$
-    t = \sqrt{18}.
+    t=4.
     $$
 
-    Numerically,
+    Therefore, the center of mass theoretically crosses the height \(y=\ell\) at
 
     $$
-    t \approx 4.243.
-    $$
-
-    So, in the free fall scenario, the center of mass should reach the height
-
-    $$
-    y = \frac{\ell}{2}
-    $$
-
-    at approximately
-
-    $$
-    t = 4.243.
+    t=4.
     $$
     """)
     return
 
 
 @app.cell
-def _(l, np, plt, redstart_solve):
+def _(g, l, np, plt, redstart_solve):
     def free_fall_example():
         t_span = [0.0, 5.0]
 
         y0 = [
             0.0,   # x(0)
             0.0,   # vx(0)
-            10.0,  # y(0)
+            10.0,  # y(0), center of mass height
             0.0,   # vy(0)
             0.0,   # theta(0)
             0.0,   # omega(0)
@@ -803,30 +759,26 @@ def _(l, np, plt, redstart_solve):
         t = np.linspace(t_span[0], t_span[1], 1000)
         states = sol(t)
 
-        y_t = states[2]
+        y_cm = states[2]
 
-        theoretical_crossing_time = np.sqrt(18)
+        theoretical_crossing_time = np.sqrt(2 * (10.0 - l) / g)
 
         plt.figure(figsize=(8, 5))
 
-        plt.plot(
-            t,
-            y_t,
-            label=r"$y(t)$",
-        )
+        plt.plot(t, y_cm, label=r"center of mass $y(t)$")
 
         plt.axhline(
-            l / 2,
+            l,
             color="grey",
             linestyle="--",
-            label=r"$y=\ell/2$",
+            label=r"$y=\ell$",
         )
 
         plt.axvline(
             theoretical_crossing_time,
             color="black",
             linestyle=":",
-            label=rf"$t=\sqrt{{18}}\approx {theoretical_crossing_time:.3f}$",
+            label=rf"$t={theoretical_crossing_time:.3f}$",
         )
 
         plt.title("Free Fall")
@@ -839,14 +791,6 @@ def _(l, np, plt, redstart_solve):
 
 
     free_fall_example()
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    The numerical simulation is consistent with the theoretical result: the curve \(y(t)\) crosses the height \(y=\ell/2\) at approximately \(t=\sqrt{18}\approx 4.243\).
-    """)
     return
 
 
