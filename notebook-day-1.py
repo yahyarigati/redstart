@@ -1465,6 +1465,261 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ## Booster Drawing
+
+    The goal of this part is to define a function `booster` that draws the booster at a given position and orientation.
+
+    The booster is modeled as a thin rigid body of total length \(\ell\). Its center of mass is located at
+
+    $$
+    (x,y).
+    $$
+
+    Since \(\ell\) is the total length, the distance from the center of mass to the top of the booster is
+
+    $$
+    \frac{\ell}{2},
+    $$
+
+    and the distance from the center of mass to the base of the booster is also
+
+    $$
+    \frac{\ell}{2}.
+    $$
+
+    The angle \(\theta\) gives the orientation of the booster with respect to the vertical axis. With the convention used in the dynamics, the unit vector pointing from the center of mass to the top of the booster is
+
+    $$
+    \vec{u}
+    =
+    \begin{pmatrix}
+    -\sin(\theta) \\
+    \cos(\theta)
+    \end{pmatrix}.
+    $$
+
+    Therefore, the top point of the booster is
+
+    $$
+    P_{\text{top}}
+    =
+    \begin{pmatrix}
+    x \\
+    y
+    \end{pmatrix}
+    +
+    \frac{\ell}{2}
+    \begin{pmatrix}
+    -\sin(\theta) \\
+    \cos(\theta)
+    \end{pmatrix}.
+    $$
+
+    The base point of the booster is
+
+    $$
+    P_{\text{base}}
+    =
+    \begin{pmatrix}
+    x \\
+    y
+    \end{pmatrix}
+    -
+    \frac{\ell}{2}
+    \begin{pmatrix}
+    -\sin(\theta) \\
+    \cos(\theta)
+    \end{pmatrix}.
+    $$
+
+    Equivalently,
+
+    $$
+    P_{\text{base}}
+    =
+    \begin{pmatrix}
+    x \\
+    y
+    \end{pmatrix}
+    +
+    \frac{\ell}{2}
+    \begin{pmatrix}
+    \sin(\theta) \\
+    -\cos(\theta)
+    \end{pmatrix}.
+    $$
+
+    To draw the booster as a rectangle, we also define a perpendicular unit vector
+
+    $$
+    \vec{v}
+    =
+    \begin{pmatrix}
+    \cos(\theta) \\
+    \sin(\theta)
+    \end{pmatrix}.
+    $$
+
+    The width of the booster is chosen only for visualization. The body is drawn as a polygon using the top, base, and perpendicular directions.
+
+    The flame is drawn from the base of the booster. Since the reactor force is
+
+    $$
+    \vec{F}
+    =
+    f
+    \begin{pmatrix}
+    -\sin(\theta+\phi) \\
+    \cos(\theta+\phi)
+    \end{pmatrix},
+    $$
+
+    the flame points in the opposite direction:
+
+    $$
+    -\vec{F}.
+    $$
+
+    Thus, the direction of the flame is
+
+    $$
+    \begin{pmatrix}
+    \sin(\theta+\phi) \\
+    -\cos(\theta+\phi)
+    \end{pmatrix}.
+    $$
+
+    The length of the flame is chosen proportional to the thrust \(f\). In particular, when
+
+    $$
+    f = Mg,
+    $$
+
+    the flame length is chosen to be
+
+    $$
+    \frac{\ell}{2}.
+    $$
+    """)
+    return
+
+
+@app.cell
+def _(M, g, l, np, svg):
+    def polygon_points(points):
+        return " ".join(f"{px},{py}" for px, py in points)
+
+
+    def booster(x, y, theta, f, phi):
+        body_width = 0.18
+
+        center = np.array([x, y])
+
+        # Unit vector from the center of mass to the top of the booster
+        axis = np.array([
+            -np.sin(theta),
+            np.cos(theta),
+        ])
+
+        # Unit vector perpendicular to the booster axis
+        perp = np.array([
+            np.cos(theta),
+            np.sin(theta),
+        ])
+
+        # Top and base of the booster
+        top = center + (l / 2) * axis
+        base = center - (l / 2) * axis
+
+        # Four corners of the rectangular body
+        p1 = top + (body_width / 2) * perp
+        p2 = top - (body_width / 2) * perp
+        p3 = base - (body_width / 2) * perp
+        p4 = base + (body_width / 2) * perp
+
+        body_points = polygon_points([p1, p2, p3, p4])
+
+        # Direction of the reactor force
+        force_direction = np.array([
+            -np.sin(theta + phi),
+            np.cos(theta + phi),
+        ])
+
+        # The flame points in the opposite direction of the force
+        flame_direction = -force_direction
+
+        # Flame length: equal to l/2 when f = M*g
+        flame_length = (l / 2) * (f / (M * g))
+
+        flame_width = 0.25
+
+        flame_tip = base + flame_length * flame_direction
+        flame_left = base + (flame_width / 2) * perp
+        flame_right = base - (flame_width / 2) * perp
+
+        flame_points = polygon_points([flame_left, flame_tip, flame_right])
+
+        return svg.g()(
+            # Reactor flame
+            svg.polygon(
+                points=flame_points,
+                fill="orange",
+                stroke="red",
+                stroke_width=0.02,
+                fill_opacity=0.8,
+            ),
+
+            # Booster body
+            svg.polygon(
+                points=body_points,
+                fill="lightgrey",
+                stroke="black",
+                stroke_width=0.03,
+            ),
+
+            # Center of mass
+            svg.circle(
+                cx=x,
+                cy=y,
+                r=0.05,
+                fill="black",
+            ),
+        )
+
+    return (booster,)
+
+
+@app.cell
+def _(M, booster, g, l, mo, np, world):
+    mo.hstack(
+        [
+            mo.Html(
+                world(
+                    [-3, 3, -2, 4],
+                    booster(0, l / 2, 0, 0, 0),
+                )
+            ),
+            mo.Html(
+                world(
+                    [-3, 3, -2, 4],
+                    booster(0, l / 2, 0, M * g, 0),
+                )
+            ),
+            mo.Html(
+                world(
+                    [-3, 3, -2, 4],
+                    booster(-l / 2, l, np.pi / 4, 2 * M * g, np.pi / 2),
+                )
+            ),
+        ],
+        justify="space-around",
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 🧩 Booster Animation
 
     Create a `booster_anim` function whose arguments are:
