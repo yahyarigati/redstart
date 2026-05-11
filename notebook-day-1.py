@@ -867,8 +867,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    We assume that initially we have
-
+    We assume that initially
 
     $$
     x(0)=0,
@@ -1686,7 +1685,7 @@ def _(M, g, l, np, svg):
             ),
         )
 
-    return (booster,)
+    return booster, polygon_points
 
 
 @app.cell
@@ -1761,6 +1760,261 @@ def _(mo):
     ).center()
     ```
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The goal of this part is to define a function `booster_anim` that creates an animated SVG fragment for the booster.
+
+    The inputs of the function are time-dependent functions:
+
+    $$
+    x(t), \quad y(t), \quad \theta(t), \quad f(t), \quad \phi(t).
+    $$
+
+    The function must return an SVG fragment representing the booster body and the reactor flame during a duration \(T\), then repeating periodically.
+
+    The booster body is drawn in the same way as in the static drawing. At each time \(t\), the center of mass is
+
+    $$
+    (x(t), y(t)).
+    $$
+
+    Since the booster has total length \(\ell\), the distance from the center of mass to the top and to the base is
+
+    $$
+    \frac{\ell}{2}.
+    $$
+
+    The unit vector pointing from the center of mass to the top of the booster is
+
+    $$
+    \vec{u}(t)
+    =
+    \begin{pmatrix}
+    -\sin(\theta(t)) \\
+    \cos(\theta(t))
+    \end{pmatrix}.
+    $$
+
+    Therefore, the top and base points are
+
+    $$
+    P_{\text{top}}(t)
+    =
+    \begin{pmatrix}
+    x(t) \\
+    y(t)
+    \end{pmatrix}
+    +
+    \frac{\ell}{2}\vec{u}(t)
+    $$
+
+    and
+
+    $$
+    P_{\text{base}}(t)
+    =
+    \begin{pmatrix}
+    x(t) \\
+    y(t)
+    \end{pmatrix}
+    -
+    \frac{\ell}{2}\vec{u}(t).
+    $$
+
+    To draw the body as a rectangle, we also use the perpendicular unit vector
+
+    $$
+    \vec{v}(t)
+    =
+    \begin{pmatrix}
+    \cos(\theta(t)) \\
+    \sin(\theta(t))
+    \end{pmatrix}.
+    $$
+
+    The reactor force direction is
+
+    $$
+    \vec{d}_F(t)
+    =
+    \begin{pmatrix}
+    -\sin(\theta(t)+\phi(t)) \\
+    \cos(\theta(t)+\phi(t))
+    \end{pmatrix}.
+    $$
+
+    The flame points in the opposite direction of the force, so its direction is
+
+    $$
+    -\vec{d}_F(t)
+    =
+    \begin{pmatrix}
+    \sin(\theta(t)+\phi(t)) \\
+    -\cos(\theta(t)+\phi(t))
+    \end{pmatrix}.
+    $$
+
+    The length of the flame must be proportional to the force \(f(t)\). We choose
+
+    $$
+    L_{\text{flame}}(t)
+    =
+    \frac{\ell}{2}
+    \frac{f(t)}{Mg}.
+    $$
+
+    Thus, when \(f(t)=Mg\), the flame length is
+
+    $$
+    L_{\text{flame}}(t)=\frac{\ell}{2}.
+    $$
+
+    To animate the booster, we sample several times between \(0\) and \(T\), compute the polygon points for the body and the flame at each time, and use SVG `<animate>` elements to interpolate the polygon points over time.
+    """)
+    return
+
+
+@app.cell
+def _(M, g, l, np, polygon_points, svg):
+    def booster_geometry(x, y, theta, f, phi):
+        body_width = 0.18
+        flame_width = 0.25
+
+        center = np.array([x, y])
+
+        # Direction from the center of mass to the top of the booster
+        axis = np.array([
+            -np.sin(theta),
+            np.cos(theta),
+        ])
+
+        # Direction perpendicular to the booster axis
+        perp = np.array([
+            np.cos(theta),
+            np.sin(theta),
+        ])
+
+        # Top and base of the booster
+        top = center + (l / 2) * axis
+        base = center - (l / 2) * axis
+
+        # Body corners
+        p1 = top + (body_width / 2) * perp
+        p2 = top - (body_width / 2) * perp
+        p3 = base - (body_width / 2) * perp
+        p4 = base + (body_width / 2) * perp
+
+        body_points = polygon_points([p1, p2, p3, p4])
+
+        # Direction of the reactor force
+        force_direction = np.array([
+            -np.sin(theta + phi),
+            np.cos(theta + phi),
+        ])
+
+        # The flame points in the opposite direction
+        flame_direction = -force_direction
+
+        # Flame length: equal to l/2 when f = M*g
+        flame_length = (l / 2) * (f / (M * g))
+
+        flame_tip = base + flame_length * flame_direction
+        flame_left = base + (flame_width / 2) * perp
+        flame_right = base - (flame_width / 2) * perp
+
+        flame_points = polygon_points([flame_left, flame_tip, flame_right])
+
+        return body_points, flame_points
+
+
+    def booster_anim(x, y, theta, f, phi, T=5.0, frames=100):
+        times = np.linspace(0.0, T, frames)
+
+        key_times = "; ".join(str(t / T) for t in times)
+
+        body_values = []
+        flame_values = []
+
+        for t in times:
+            body_points, flame_points = booster_geometry(
+                x(t),
+                y(t),
+                theta(t),
+                f(t),
+                phi(t),
+            )
+
+            body_values.append(body_points)
+            flame_values.append(flame_points)
+
+        body_values = "; ".join(body_values)
+        flame_values = "; ".join(flame_values)
+
+        return svg.g()(
+            svg.polygon(
+                points=body_values.split("; ")[0],
+                fill="orange",
+                stroke="red",
+                stroke_width=0.02,
+                fill_opacity=0.8,
+            )(
+                svg.animate(
+                    attributeName="points",
+                    values=flame_values,
+                    keyTimes=key_times,
+                    dur=f"{T}s",
+                    repeatCount="indefinite",
+                )
+            ),
+            svg.polygon(
+                points=body_values.split("; ")[0],
+                fill="lightgrey",
+                stroke="black",
+                stroke_width=0.03,
+            )(
+                svg.animate(
+                    attributeName="points",
+                    values=body_values,
+                    keyTimes=key_times,
+                    dur=f"{T}s",
+                    repeatCount="indefinite",
+                )
+            ),
+        )
+
+    return (booster_anim,)
+
+
+@app.cell
+def _(M, booster_anim, g, l, mo, np, world):
+    def booster_anim_0():
+        T = 5.0
+
+        def x(t):
+            return -l / 2 + l * (t / T)
+
+        def y(t):
+            return l / 2 + l / 2 * (t / T)
+
+        def theta(t):
+            return (t / T) * 2 * np.pi
+
+        def f(t):
+            return M * g * (t / T)
+
+        def phi(t):
+            return 2 * np.pi * (t / T)
+
+        return booster_anim(x, y, theta, f, phi, T=T)
+
+
+    mo.Html(
+        world([-3, 3, -2, 4], booster_anim_0())
+    ).center()
     return
 
 
