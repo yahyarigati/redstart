@@ -71,7 +71,7 @@ def _():
     import numpy as np
     import numpy.linalg as la
 
-    return
+    return (np,)
 
 
 @app.cell(hide_code=True)
@@ -131,10 +131,41 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    #### According to the model described above, we have:
+    """)
+    return
+
+
+@app.cell
+def _():
+    l = 2.0
+    M = 1.0
+    g = 1.0
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 🧩 Forces
 
     Compute the cartesian coordinates $f_x$ and $f_y$ of the force applied to the booster by the reactor, functions of $f$, $\theta$ and $\phi$.
     """)
+    return
+
+
+@app.cell
+def _(np):
+    def f_reactor(f,teta,phi):
+        f = np.array([[f*(np.sin(teta+phi))],[-f*(np.cos(teta+phi))]])
+        return f
+
+    def fx(f,teta,phi):
+        return f_reactor(f,teta,phi)[0][0]
+
+    def fy(f,teta,phi):
+        return f_reactor(f,teta,phi)[0][1]
+
     return
 
 
@@ -144,6 +175,14 @@ def _(mo):
     ## 🧩 Center of Mass
 
     Give the ordinary differential equation that governs the evolution of the position $(x, y)$ of the center of mass of the booster.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+ 
     """)
     return
 
