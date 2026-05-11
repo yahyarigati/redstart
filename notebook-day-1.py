@@ -182,7 +182,32 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
- 
+    According\ to\ the\ FPD,
+    \[
+    m\vec{a} = \sum \vec{F}
+    \]
+
+    and in our Cartesian representation, it gives us:
+
+    \[
+    M
+    \begin{pmatrix}
+    \ddot{x} \\
+    \ddot{y}
+    \end{pmatrix}
+    =
+    M
+    \begin{pmatrix}
+    0 \\
+    -g
+    \end{pmatrix}
+    +
+    f
+    \begin{pmatrix}
+    \sin(\theta+\phi) \\
+    \\-cos(\theta+\phi)
+    \end{pmatrix}
+    \]
     """)
     return
 
