@@ -71,7 +71,7 @@ def _():
     import numpy as np
     import numpy.linalg as la
 
-    return (np,)
+    return np, sci
 
 
 @app.cell(hide_code=True)
@@ -425,7 +425,7 @@ def _(J, M, fx, fy, g, l, np):
             -(l * f / (2 * J)) * np.sin(phi),
         ])
 
-    return
+    return (F,)
 
 
 @app.cell(hide_code=True)
@@ -531,6 +531,103 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    The goal of this part is to define a function `redstart_solve` that numerically solves the differential equation governing the motion of the booster.
+
+    The state of the booster is
+
+    $$
+    s =
+    (x, v_x, y, v_y, \theta, \omega).
+    $$
+
+    The dynamics of the system are given by
+
+    $$
+    \dot{s} = F(s, f, \phi),
+    $$
+
+    where \(f\) is the thrust magnitude and \(\phi\) is the angle of the reactor force with respect to the booster axis.
+
+    Since the controls \(f\) and \(\phi\) may depend on time and on the current state, they are given by a function
+
+    $$
+    f_\phi(t, s).
+    $$
+
+    This function returns
+
+    $$
+    (f, \phi).
+    $$
+
+    To simulate the system, we use the function `scipy.integrate.solve_ivp`, which solves ordinary differential equations of the form
+
+    $$
+    \dot{s}(t) = G(t, s(t)).
+    $$
+
+    Here, the function \(G\) is obtained by first computing the current control inputs \(f\) and \(\phi\), then evaluating the vector field \(F\):
+
+    $$
+    G(t, s) = F(s, f, \phi).
+    $$
+
+    Therefore, for each time \(t\) and state \(s\), we compute
+
+    $$
+    (f, \phi) = f_\phi(t, s),
+    $$
+
+    then
+
+    $$
+    \dot{s} = F(s, f, \phi).
+    $$
+
+    The function `redstart_solve` takes as input:
+
+    - `t_span`, the time interval of the simulation;
+    - `y0`, the initial state;
+    - `f_phi`, the function defining the control inputs.
+
+    It returns a function `sol` such that, for any time \(t\),
+
+    $$
+    sol(t)
+    $$
+
+    gives the state of the booster at that time.
+    """)
+    return
+
+
+@app.cell
+def _(F, sci):
+    def redstart_solve(t_span, y0, f_phi):
+        def rhs(t, y):
+            f, phi = f_phi(t, y)
+            return F(y, f, phi)
+
+        result = sci.solve_ivp(
+            rhs,
+            t_span,
+            y0,
+            dense_output=True,
+            rtol=1e-9,
+            atol=1e-9,
+        )
+
+        if not result.success:
+            raise RuntimeError(result.message)
+
+        return result.sol
+
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 🧩 Freefall test
 
 
@@ -539,6 +636,11 @@ def _(mo):
 
     Check your `redstart_solve` function in this scenario and produce a graph that allows us to check the above answer numerically/visually.
     """)
+    return
+
+
+@app.cell
+def _():
     return
 
 
