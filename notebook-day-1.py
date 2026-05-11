@@ -1180,7 +1180,7 @@ def _(l, np, plt, redstart_solve):
 
 
     controlled_landing_sol = controlled_landing_example()
-    return
+    return (controlled_landing_force,)
 
 
 @app.cell(hide_code=True)
@@ -2033,6 +2033,370 @@ def _(mo):
 
     4. The "controlled landing" scenario (see above).
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    We now use the numerical simulation of the booster dynamics to animate the motion of the booster.
+
+    For each scenario, the system is solved using the function `redstart_solve`. The solution gives the state
+
+    $$
+    s(t)
+    =
+    (x(t), \dot{x}(t), y(t), \dot{y}(t), \theta(t), \dot{\theta}(t)).
+    $$
+
+    The animation then uses the functions
+
+    $$
+    x(t), \quad y(t), \quad \theta(t), \quad f(t), \quad \phi(t)
+    $$
+
+    to draw the booster at each time.
+
+    The four scenarios are:
+
+    1. free fall, with \(f=0\) and \(\phi=0\);
+    2. hovering, with \(f=Mg\) and \(\phi=0\);
+    3. tilted thrust, with \(f=Mg\) and \(\phi=\pi/8\);
+    4. controlled landing, using the force \(f(t)=0.384t+0.44\).
+
+    In all cases, the animation duration is \(5\) seconds.
+    """)
+    return
+
+
+@app.cell
+def _(booster_anim, redstart_solve, world):
+    def animation_from_simulation(
+        t_span,
+        y0,
+        f_phi,
+        view_box=[-3, 3, -2, 11],
+        T=5.0,
+    ):
+        sol = redstart_solve(t_span, y0, f_phi)
+
+        def x_fun(t):
+            return sol(t)[0]
+
+        def y_fun(t):
+            return sol(t)[2]
+
+        def theta_fun(t):
+            return sol(t)[4]
+
+        def f_fun(t):
+            state = sol(t)
+            return f_phi(t, state)[0]
+
+        def phi_fun(t):
+            state = sol(t)
+            return f_phi(t, state)[1]
+
+        return world(
+            view_box,
+            booster_anim(
+                x_fun,
+                y_fun,
+                theta_fun,
+                f_fun,
+                phi_fun,
+                T=T,
+            ),
+        )
+
+    return (animation_from_simulation,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Scenario 1: Free fall
+
+    In this first scenario, the reactor is turned off:
+
+    $$
+    f = 0
+    $$
+
+    and
+
+    $$
+    \phi = 0.
+    $$
+
+    Therefore, the only force acting on the booster is gravity. The booster falls vertically while keeping the same orientation, since no torque is applied.
+    """)
+    return
+
+
+@app.cell
+def _(animation_from_simulation, mo, np):
+    def scenario_free_fall_anim():
+        t_span = [0.0, 5.0]
+
+        y0 = [
+            0.0,   # x(0)
+            0.0,   # vx(0)
+            10.0,  # y(0)
+            0.0,   # vy(0)
+            0.0,   # theta(0)
+            0.0,   # omega(0)
+        ]
+
+        def f_phi(t, y):
+            return np.array([0.0, 0.0])
+
+        return animation_from_simulation(
+            t_span,
+            y0,
+            f_phi,
+            view_box=[-3, 3, -2, 11],
+            T=5.0,
+        )
+
+
+    mo.Html(scenario_free_fall_anim()).center()
+    return (scenario_free_fall_anim,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Scenario 2: Hovering
+
+    In this scenario, the reactor force is equal to the weight:
+
+    $$
+    f = Mg.
+    $$
+
+    The thrust is applied along the booster axis:
+
+    $$
+    \phi = 0.
+    $$
+
+    Since the booster is initially vertical, we have
+
+    $$
+    \theta = 0.
+    $$
+
+    The vertical acceleration is therefore
+
+    $$
+    \ddot{y}
+    =
+    \frac{Mg}{M}-g
+    =
+    0.
+    $$
+
+    Since the initial vertical velocity is also zero, the booster remains at the same height.
+    """)
+    return
+
+
+@app.cell
+def _(M, animation_from_simulation, g, mo, np):
+    def scenario_hover_anim():
+        t_span = [0.0, 5.0]
+
+        y0 = [
+            0.0,   # x(0)
+            0.0,   # vx(0)
+            10.0,  # y(0)
+            0.0,   # vy(0)
+            0.0,   # theta(0)
+            0.0,   # omega(0)
+        ]
+
+        def f_phi(t, y):
+            return np.array([M * g, 0.0])
+
+        return animation_from_simulation(
+            t_span,
+            y0,
+            f_phi,
+            view_box=[-3, 3, -2, 11],
+            T=5.0,
+        )
+
+
+    mo.Html(scenario_hover_anim()).center()
+    return (scenario_hover_anim,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Scenario 3: Tilted thrust
+
+    In this scenario, the reactor force still has magnitude
+
+    $$
+    f = Mg,
+    $$
+
+    but it is no longer aligned with the booster axis:
+
+    $$
+    \phi = \frac{\pi}{8}.
+    $$
+
+    Since \(\phi \neq 0\), the reactor force creates a nonzero torque around the center of mass.
+
+    The angular acceleration is
+
+    $$
+    \ddot{\theta}
+    =
+    -\frac{\ell f}{2J}\sin(\phi).
+    $$
+
+    Therefore, the booster starts rotating.
+
+    Moreover, since the thrust is not perfectly vertical, the booster also has horizontal acceleration.
+    """)
+    return
+
+
+@app.cell
+def _(M, animation_from_simulation, g, mo, np):
+    def scenario_tilted_force_anim():
+        t_span = [0.0, 5.0]
+
+        y0 = [
+            0.0,   # x(0)
+            0.0,   # vx(0)
+            10.0,  # y(0)
+            0.0,   # vy(0)
+            0.0,   # theta(0)
+            0.0,   # omega(0)
+        ]
+
+        def f_phi(t, y):
+            return np.array([M * g, np.pi / 8])
+
+        return animation_from_simulation(
+            t_span,
+            y0,
+            f_phi,
+            view_box=[-8, 3, -2, 11],
+            T=5.0,
+        )
+
+
+    mo.Html(scenario_tilted_force_anim()).center()
+    return (scenario_tilted_force_anim,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Scenario 4: Controlled landing
+
+    In the controlled landing scenario, the initial state is
+
+    $$
+    (x, \dot{x}, y, \dot{y}, \theta, \dot{\theta})
+    =
+    (0,0,10,-2,0,0).
+    $$
+
+    The thrust is applied along the booster axis:
+
+    $$
+    \phi = 0.
+    $$
+
+    The force used for the controlled landing is
+
+    $$
+    f(t)=0.384t+0.44.
+    $$
+
+    This force was chosen so that the center of mass reaches
+
+    $$
+    y(5)=\frac{\ell}{2}
+    $$
+
+    with zero vertical velocity:
+
+    $$
+    \dot{y}(5)=0.
+    $$
+
+    Since \(\ell=2\), this means
+
+    $$
+    y(5)=1.
+    $$
+
+    Thus, the booster lands with its base at ground level and with zero vertical velocity.
+    """)
+    return
+
+
+@app.cell
+def _(animation_from_simulation, controlled_landing_force, mo, np):
+    def scenario_controlled_landing_anim():
+        t_span = [0.0, 5.0]
+
+        y0 = [
+            0.0,    # x(0)
+            0.0,    # vx(0)
+            10.0,   # y(0)
+            -2.0,   # vy(0)
+            0.0,    # theta(0)
+            0.0,    # omega(0)
+        ]
+
+        def f_phi(t, y):
+            return np.array([controlled_landing_force(t), 0.0])
+
+        return animation_from_simulation(
+            t_span,
+            y0,
+            f_phi,
+            view_box=[-3, 3, -2, 11],
+            T=5.0,
+        )
+
+
+    mo.Html(scenario_controlled_landing_anim()).center()
+    return (scenario_controlled_landing_anim,)
+
+
+@app.cell
+def _(
+    mo,
+    scenario_controlled_landing_anim,
+    scenario_free_fall_anim,
+    scenario_hover_anim,
+    scenario_tilted_force_anim,
+):
+    mo.vstack(
+        [
+            mo.md("### Scenario 1: Free fall"),
+            mo.Html(scenario_free_fall_anim()).center(),
+
+            mo.md("### Scenario 2: Hovering"),
+            mo.Html(scenario_hover_anim()).center(),
+
+            mo.md("### Scenario 3: Tilted thrust"),
+            mo.Html(scenario_tilted_force_anim()).center(),
+
+            mo.md("### Scenario 4: Controlled landing"),
+            mo.Html(scenario_controlled_landing_anim()).center(),
+        ]
+    )
     return
 
 
