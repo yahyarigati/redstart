@@ -1875,7 +1875,7 @@ def _(M, g, l, np, polygon_points, svg):
         return body_points, flame_points
 
 
-    def booster_anim(x, y, theta, f, phi, T=5.0, frames=100):
+    def booster_anim(x, y, theta, f, phi, T=5.0, frames=100, show_flame=True):
         times = np.linspace(0.0, T, frames)
 
         key_times = "; ".join(str(t / T) for t in times)
@@ -1898,37 +1898,45 @@ def _(M, g, l, np, polygon_points, svg):
         body_values = "; ".join(body_values)
         flame_values = "; ".join(flame_values)
 
-        return svg.g()(
-            svg.polygon(
-                points=body_values.split("; ")[0],
-                fill="orange",
-                stroke="red",
-                stroke_width=0.02,
-                fill_opacity=0.8,
-            )(
-                svg.animate(
-                    attributeName="points",
-                    values=flame_values,
-                    keyTimes=key_times,
-                    dur=f"{T}s",
-                    repeatCount="indefinite",
-                )
-            ),
-            svg.polygon(
-                points=body_values.split("; ")[0],
-                fill="lightgrey",
-                stroke="black",
-                stroke_width=0.03,
-            )(
-                svg.animate(
-                    attributeName="points",
-                    values=body_values,
-                    keyTimes=key_times,
-                    dur=f"{T}s",
-                    repeatCount="indefinite",
-                )
-            ),
+        first_body = body_values.split("; ")[0]
+
+        body_svg = svg.polygon(
+            points=first_body,
+            fill="lightgrey",
+            stroke="black",
+            stroke_width=0.03,
+        )(
+            svg.animate(
+                attributeName="points",
+                values=body_values,
+                keyTimes=key_times,
+                dur=f"{T}s",
+                repeatCount="indefinite",
+            )
         )
+
+        if not show_flame:
+            return svg.g()(body_svg)
+
+        first_flame = flame_values.split("; ")[0]
+
+        flame_svg = svg.polygon(
+            points=first_flame,
+            fill="orange",
+            stroke="red",
+            stroke_width=0.02,
+            fill_opacity=0.8,
+        )(
+            svg.animate(
+                attributeName="points",
+                values=flame_values,
+                keyTimes=key_times,
+                dur=f"{T}s",
+                repeatCount="indefinite",
+            )
+        )
+
+        return svg.g()(flame_svg, body_svg)
 
     return (booster_anim,)
 
@@ -2079,7 +2087,7 @@ def _(mo):
 
 
 @app.cell
-def _(animation_from_simulation, mo, np):
+def _(booster_anim, mo, np, redstart_solve, world):
     def scenario_free_fall_anim():
         t_span = [0.0, 5.0]
 
@@ -2095,12 +2103,34 @@ def _(animation_from_simulation, mo, np):
         def f_phi(t, y):
             return np.array([0.0, 0.0])
 
-        return animation_from_simulation(
-            t_span,
-            y0,
-            f_phi,
-            view_box=[-3, 3, -2, 11],
-            T=5.0,
+        sol = redstart_solve(t_span, y0, f_phi)
+
+        def x_fun(t):
+            return sol(t)[0]
+
+        def y_fun(t):
+            return sol(t)[2]
+
+        def theta_fun(t):
+            return sol(t)[4]
+
+        def f_fun(t):
+            return 0.0
+
+        def phi_fun(t):
+            return 0.0
+
+        return world(
+            [-3, 3, -2, 11],
+            booster_anim(
+                x_fun,
+                y_fun,
+                theta_fun,
+                f_fun,
+                phi_fun,
+                T=5.0,
+                show_flame=False,
+            ),
         )
 
 
