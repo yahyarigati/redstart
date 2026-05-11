@@ -1201,7 +1201,7 @@ def _(mo):
 def _():
     from svg import svg, transform, animate_transform
 
-    return
+    return (svg,)
 
 
 @app.cell(hide_code=True)
@@ -1255,6 +1255,157 @@ def _(mo):
     )
     ```
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The goal of this part is to define a function `world` that creates the SVG environment in which the booster evolves.
+
+    The function takes as input a Cartesian view box
+
+    $$
+    [x_{\min}, x_{\max}, y_{\min}, y_{\max}]
+    $$
+
+    and optional SVG objects.
+
+    In SVG, the default coordinate system is not the usual mathematical coordinate system. In particular, the vertical axis points downwards. However, in this notebook, we want to use Cartesian coordinates, where the vertical axis \(y\) points upwards.
+
+    To do this, we use two transformations.
+
+    First, we translate the origin:
+
+    $$
+    \text{translate}(-x_{\min}, y_{\max}).
+    $$
+
+    Then, we flip the vertical axis using
+
+    $$
+    \text{scale}(1,-1).
+    $$
+
+    This allows us to draw all objects using standard Cartesian coordinates.
+
+    The environment contains:
+
+    - a blue sky for \(y \geq 0\);
+    - a brown ground for \(y \leq 0\);
+    - a green landing target centered at \(x=0\);
+    - optional SVG objects such as the booster.
+
+    The landing target has width \(2\), so it extends from
+
+    $$
+    x=-1
+    $$
+
+    to
+
+    $$
+    x=1.
+    $$
+
+    Since the target is on the ground, it is placed at
+
+    $$
+    y=0.
+    $$
+    """)
+    return
+
+
+@app.cell
+def _(svg):
+    def world(view_box, *objects):
+        x_min, x_max, y_min, y_max = view_box
+
+        width = x_max - x_min
+        height = y_max - y_min
+
+        return svg.svg(
+            viewbox=f"0 0 {width} {height}",
+            xmlns="http://www.w3.org/2000/svg",
+            width=300,
+            height=300,
+        )(
+            svg.g(
+                transform=f"translate({-x_min}, {y_max})",
+            )(
+                svg.g(
+                    transform="scale(1, -1)",
+                )(
+                    # Sky
+                    svg.rect(
+                        x=x_min,
+                        y=0,
+                        width=width,
+                        height=y_max,
+                        fill="#bde9ff",
+                    ),
+
+                    # Ground
+                    svg.rect(
+                        x=x_min,
+                        y=y_min,
+                        width=width,
+                        height=-y_min,
+                        fill="#8b5a2b",
+                    ),
+
+                    # Landing target
+                    svg.rect(
+                        x=-1,
+                        y=0,
+                        width=2,
+                        height=0.12,
+                        fill="#2ecc71",
+                    ),
+
+                    # Ground line
+                    svg.line(
+                        x1=x_min,
+                        y1=0,
+                        x2=x_max,
+                        y2=0,
+                        stroke="black",
+                        stroke_width=0.02,
+                    ),
+
+                    # Extra objects
+                    *objects,
+                )
+            )
+        )
+
+    return (world,)
+
+
+@app.cell
+def _(mo, svg, world):
+    mo.hstack(
+        [
+            mo.Html(
+                world([-3, 3, -2, 4])
+            ),
+            mo.Html(
+                world(
+                    [-3, 3, -2, 4],
+                    svg.rect(x=-1, y=0, width=2, height=2, fill="black"),
+                )
+            ),
+            mo.Html(
+                world(
+                    [-3, 3, -2, 4],
+                    svg.rect(x=-3, y=2, width=2, height=2, fill="red"),
+                    svg.rect(x=1, y=2, width=2, height=2, fill="blue"),
+                )
+            ),
+        ],
+        justify="space-around",
+    )
     return
 
 
