@@ -71,7 +71,7 @@ def _():
     import numpy as np
     import numpy.linalg as la
 
-    return np, plt, scipy
+    return la, np, plt, scipy
 
 
 @app.cell(hide_code=True)
@@ -1266,7 +1266,7 @@ def _(J, M, g, l, np):
 
     print("\nA =\n", A)
     print("\nB =\n", B)
-    return
+    return (A,)
 
 
 @app.cell(hide_code=True)
@@ -1275,6 +1275,54 @@ def _(mo):
     ## 🧩 Stability
 
     Is the generic equilibrium asymptotically stable?
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    A linear system $\dot{s} = As$ is **asymptotically stable** if and only if **all eigenvalues of $A$ have strictly negative real parts**.
+
+    Let's compute the eigenvalues numerically:
+    """)
+    return
+
+
+@app.cell
+def _(A, la):
+    eigenvalues = la.eigvals(A)
+    print("Eigenvalues of A :", eigenvalues)
+    print("Real parts       :", eigenvalues.real)
+
+
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ```python
+    eigenvalues = la.eigvals(A)
+    print("Eigenvalues of A :", eigenvalues)
+    # → [0. 0. 0. 0. 0. 0.]
+    ```
+
+    All six eigenvalues are **zero** → the equilibrium is **not asymptotically stable**
+    (only marginally stable).
+
+
+    #### Nuance — linearization vs. reality
+
+    This conclusion is drawn on the **linearized model**, which is only a local
+    approximation. When all eigenvalues are zero, we have **no conclusion** about the true nonlinear system — one would need a
+    deeper analysis to decide.
+
+    Here, physical intuition confirms that the booster is indeed unstable in practice:
+    an uncorrected tilt causes an ever-growing lateral drift.
+
+     **An active controller is therefore necessary**, designed so that all
+     eigenvalues of the closed-loop matrix $A - BK$ are strictly negative.
     """)
     return
 
