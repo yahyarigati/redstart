@@ -1295,7 +1295,6 @@ def _(A, la):
     print("Eigenvalues of A :", eigenvalues)
     print("Real parts       :", eigenvalues.real)
 
-
     return
 
 
@@ -1451,7 +1450,7 @@ def _(alpha, controllability_matrix, g, np):
     rank_lat = np.linalg.matrix_rank(C_lat)
     print(f"\nRank of lateral controllability matrix : {rank_lat} / {A_lat.shape[0]}")
     print(f"Controllable : {rank_lat == A_lat.shape[0]}")
-    return (A_lat,)
+    return A_lat, B_lat
 
 
 @app.cell(hide_code=True)
@@ -1480,7 +1479,7 @@ def _(mo):
 
 
 @app.cell
-def _(A_lat, np, plt):
+def _(A_lat, B_lat, np, plt):
     from scipy.integrate import solve_ivp
 
     # Initial conditions for the lateral reduced system
@@ -1489,7 +1488,7 @@ def _(A_lat, np, plt):
 
     # Open-loop linear dynamics (φ = 0  →  u = 0)
     def linear_open_loop(t, z):
-        return A_lat @ z   # + B_lat * 0
+        return A_lat @ z + B_lat @[0] 
 
     t_span = [0.0, 5.0]
     t_eval = np.linspace(0, 5, 500)
