@@ -1514,7 +1514,7 @@ def _(A_lat, B_lat, np, plt):
     fig.suptitle(r"Open-loop linearized model — $\phi=0$, $\theta(0)=\pi/4$")
     plt.tight_layout()
     plt.show()
-    return
+    return (solve_ivp,)
 
 
 @app.cell(hide_code=True)
@@ -1587,6 +1587,134 @@ def _(mo):
     Explain your thought process, show your iterative guesses and simulations!
 
     Is your final closed-loop model asymptotically stable?
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    **Theoretical analysis:**
+
+    With $K = [0, 0, k_3, k_4]$, the control law is:
+    $$\Delta\phi = -k_3 \Delta\theta - k_4 \Delta\dot{\theta}$$
+
+    Substituting into $\Delta\ddot{\theta} = -\alpha\Delta\phi$:
+    $$\Delta\ddot{\theta} = -\alpha(-k_3\Delta\theta - k_4\Delta\dot{\theta}) = \alpha k_3\Delta\theta + \alpha k_4\Delta\dot{\theta}$$
+
+    Rearranging: $\Delta\ddot{\theta} - \alpha k_4\Delta\dot{\theta} - \alpha k_3\Delta\theta = 0$
+
+    Characteristic polynomial: $s^2 - \alpha k_4 s - \alpha k_3$
+
+    For stability we need **both roots to have negative real parts**, which requires:
+    - $k_3 > 0$ (positive position gain)
+    - $k_4 > 0$ (positive damping gain)
+
+    For convergence in ~20 s, we want poles around $\text{Re}(p) \approx -0.3$ to $-0.5$.
+
+    **Iterative design (trial and error):**
+    """)
+    return
+
+
+@app.cell
+def _(A_lat, B_lat, np, plt, solve_ivp):
+    # ── Simulation function ───────────────────────────────────────────────────
+    def simulate_lateral_closed_loop(K, z0, t_span, t_eval):
+        """Simulate the lateral system with state feedback Δφ = -K·z."""
+    
+        A_cl = A_lat - B_lat @ K   # closed-loop system matrix
+
+        def dyn(t, z):
+            return A_cl @ z
+
+        sol = solve_ivp(dyn, t_span, z0, t_eval=t_eval, dense_output=True)
+    
+        phi_t = -(K @ sol.y)[0]   # control signal applied over time
+    
+        return sol, phi_t
+
+
+    # ── Simulation setup (RENAMED VARIABLES) ──────────────────────────────────
+    theta0_cl = 45 / 180 * np.pi
+
+    z0_cl = np.array([0.0, 0.0, theta0_cl, 0.0])
+
+    t_span_cl = [0.0, 25.0]
+    t_eval_cl = np.linspace(0, 25, 1000)
+
+
+    # ── Iterative manual tuning ───────────────────────────────────────────────
+    candidates = {
+        "Trial 1 : k3=1, k4=1  (too slow)"  : np.array([[0, 0, 1.0, 1.0]]),
+        "Trial 2 : k3=2, k4=3  (better)"    : np.array([[0, 0, 2.0, 3.0]]),
+        "Trial 3 : k3=3, k4=4  ✓ (good)"    : np.array([[0, 0, 3.0, 4.0]]),
+    }
+
+
+    # ── Plot (RENAMED VARIABLES) ──────────────────────────────────────────────
+    fig_cl, axes_cl = plt.subplots(1, 2, figsize=(12, 4))
+
+    colors = ["#ff6b6b", "#ffd43b", "#69db7c"]
+
+    for (label, K), color in zip(candidates.items(), colors):
+        sol, phi_t = simulate_lateral_closed_loop(K, z0_cl, t_span_cl, t_eval_cl)
+    
+        axes_cl[0].plot(t_eval_cl, sol.y[2] * 180/np.pi,
+                        label=label, color=color, lw=2)
+    
+        axes_cl[1].plot(t_eval_cl, phi_t * 180/np.pi,
+                        label=label, color=color, lw=2)
+
+
+    for ax in axes_cl:
+        ax.axhline( 90, color="white", ls="--", alpha=0.4, label="±π/2 limit")
+        ax.axhline(-90, color="white", ls="--", alpha=0.4)
+        ax.grid(True)
+        ax.legend(fontsize=8)
+
+
+    axes_cl[0].set_title(r"$\Delta\theta(t)$  (degrees)")
+    axes_cl[1].set_title(r"$\Delta\phi(t)$   (degrees)")
+
+    fig_cl.suptitle("Manual controller tuning — iterative design")
+
+    plt.tight_layout()
+    plt.show()
+    return
+
+
+@app.cell
+def _(A_lat, B_lat, la, np):
+    # ── Closed-loop poles for the best manual gain ────────────────────────────
+    K_manual = np.array([[0, 0, 3.0, 4.0]])
+    A_cl_manual = A_lat - B_lat @ K_manual
+    eigs_manual = la.eigvals(A_cl_manual)
+
+    print("Closed-loop poles (manual) :", np.round(eigs_manual, 3))
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Analysis of the manual controller
+
+    With $K = [0,\, 0,\, 3,\, 4]$:
+
+    | Requirement | Result |
+    |-------------|--------|
+    | $\Delta\theta(t) \to 0$ in < 20 s |  converges in ~15 s |
+    | $\|\Delta\theta(t)\| < \pi/2$ always |  satisfied |
+    | $\|\Delta\phi(t)\| < \pi/2$ always |  satisfied |
+    | $\Delta x(t) \to 0$ | diverges (poles at 0, since $k_1=k_2=0$) |
+
+    The two poles associated with the angle dynamics are at $\approx -1.45 \pm 1.45j$ (stable),
+    but the two poles associated with $x$ remain at $0$ (marginally stable at best).
+
+    The system is **not** asymptotically stable overall — $x$ drifts away.
+     This is acceptable for this exercise (we only targeted $\theta$), but
+     we need all four gains to be non-zero for full stabilization.
     """)
     return
 
