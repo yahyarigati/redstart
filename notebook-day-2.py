@@ -1196,6 +1196,82 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    We choose the error state vector:
+    $$\Delta s = (\Delta x,\; \Delta\dot{x},\; \Delta y,\; \Delta\dot{y},\; \Delta\theta,\; \Delta\dot{\theta}) \in \mathbb{R}^6$$
+
+    and the control input vector:
+    $$u = (\Delta f,\; \Delta\phi) \in \mathbb{R}^2$$
+
+    The linearized system $\Delta\dot{s} = A\,\Delta s + B\,u$ has the form:
+
+    $$
+    A =
+    \begin{bmatrix}
+    0 & 1 & 0 & 0 & 0  & 0 \\
+    0 & 0 & 0 & 0 & -g & 0 \\
+    0 & 0 & 0 & 1 & 0  & 0 \\
+    0 & 0 & 0 & 0 & 0  & 0 \\
+    0 & 0 & 0 & 0 & 0  & 1 \\
+    0 & 0 & 0 & 0 & 0  & 0
+    \end{bmatrix},
+    \qquad
+    B =
+    \begin{bmatrix}
+    0   & 0 \\
+    0   & -g \\
+    0   & 0 \\
+    1/M & 0 \\
+    0   & 0 \\
+    0   & -\alpha
+    \end{bmatrix}
+    $$
+
+    **Reading the structure of A:**
+    - Rows 1,3,5: velocity relationships $\dot{x}=v_x$, $\dot{y}=v_y$, $\dot{\theta}=\omega$ (the `1` off-diagonals)
+    - Row 2: $\Delta\ddot{x} = -g\Delta\theta$ (the $-g$ entry couples lateral and angular dynamics)
+    - Rows 4,6: no internal dynamics (accelerations depend only on inputs, not on state)
+
+    **Reading the structure of B:**
+    - Column 1 ($\Delta f$): only affects $\Delta\ddot{y}$ via $1/M$
+    - Column 2 ($\Delta\phi$): affects both $\Delta\ddot{x}$ (via $-g$) and $\Delta\ddot{\theta}$ (via $-\alpha$)
+    """)
+    return
+
+
+@app.cell
+def _(J, M, g, l, np):
+    alpha = M * g * l / (2 * J)
+    print(f"α = Mgℓ/(2J) = {alpha}")
+
+    # State:   [Δx, Δẋ, Δy, Δẏ, Δθ, Δθ̇]
+    # Control: [Δf, Δφ]
+
+    A = np.array([
+        [0, 1,   0, 0,  0,     0],   # Δẋ  = Δvx
+        [0, 0,   0, 0, -g,     0],   # Δẍ  = -g·Δθ  (Δφ contribution is in B)
+        [0, 0,   0, 1,  0,     0],   # Δẏ  = Δvy
+        [0, 0,   0, 0,  0,     0],   # Δÿ  = Δf/M   (fully in B)
+        [0, 0,   0, 0,  0,     1],   # Δθ̇  = Δω
+        [0, 0,   0, 0,  0,     0],   # Δθ̈  = -α·Δφ  (fully in B)
+    ], dtype=float)
+
+    B = np.array([
+        [0,      0    ],  # no effect on Δẋ
+        [0,     -g    ],  # Δẍ  = -g·Δφ
+        [0,      0    ],  # no effect on Δẏ
+        [1/M,    0    ],  # Δÿ  = Δf/M
+        [0,      0    ],  # no effect on Δθ̇
+        [0,     -alpha],  # Δθ̈  = -α·Δφ
+    ], dtype=float)
+
+    print("\nA =\n", A)
+    print("\nB =\n", B)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 🧩 Stability
 
     Is the generic equilibrium asymptotically stable?
