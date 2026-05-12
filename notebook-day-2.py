@@ -1727,7 +1727,7 @@ def _(A_lat, B_lat, np, plt, solve_ivp):
 
     plt.tight_layout()
     plt.show()
-    return (simulate_lateral_closed_loop,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -1782,111 +1782,13 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    **Pole placement** is a systematic method: given a controllable system $(A, B)$,
-    we choose desired poles $\{p_1, p_2, p_3, p_4\}$ with $\text{Re}(p_i) < 0$,
-    then compute $K$ such that the characteristic polynomial of $(A - BK)$ equals $\prod_i (s - p_i)$.
-
-    **Choosing the poles:**
-    - For convergence in ~10–15 s, we want $|\text{Re}(p)| \approx 0.3$ to $0.5$
-      (time constant $\tau = 1/|\text{Re}(p)|$, converge in $\approx 4\tau$).
-    - Complex conjugate pairs give oscillatory but damped convergence.
-    - All four poles must be at strictly negative real parts for full asymptotic stability.
-
-    **Selected poles:**
-    $$\{-0.3,\; -0.4,\; -0.5 + 0.3j,\; -0.5 - 0.3j\}$$
-
-    These give:
-    - Slowest time constant: $\tau = 1/0.3 \approx 3.3$ s → converges in $\approx 4 \times 3.3 \approx 13$ s
-    - Gentle oscillation from the complex pair (damping ratio $\approx 0.86$)
+ 
     """)
     return
 
 
 @app.cell
-def _(A_lat, B_lat, la, np, plt, simulate_lateral_closed_loop):
-
-    from scipy.signal import place_poles
-
-    # ─────────────────────────────────────────────────────────────────────────────
-    # CONDITIONS INITIALES + TEMPS
-    # ─────────────────────────────────────────────────────────────────────────────
-    z0 = np.array([
-        0.1,               # Δx (m)
-        0.0,               # vitesse
-        5*np.pi/180,      # Δθ (rad)
-        0.0                # vitesse angulaire
-    ])
-
-    t_span = (0, 10)
-    t_eval = np.linspace(0, 10, 300)
-
-    # ─────────────────────────────────────────────────────────────────────────────
-    # POLES DESIRES
-    # ─────────────────────────────────────────────────────────────────────────────
-    desired_poles_pp = np.array([
-        -0.3,
-        -0.4,
-        -0.5 + 0.3j,
-        -0.5 - 0.3j
-    ])
-
-    # ─────────────────────────────────────────────────────────────────────────────
-    # CALCUL DU GAIN K (Pole Placement)
-    # ─────────────────────────────────────────────────────────────────────────────
-    result_pp = place_poles(A_lat, B_lat, desired_poles_pp)
-    K_pp = result_pp.gain_matrix
-
-    print("K_pp (pole placement) =", np.round(K_pp, 4))
-
-    # ─────────────────────────────────────────────────────────────────────────────
-    # VERIFICATION DES POLES
-    # ─────────────────────────────────────────────────────────────────────────────
-    A_cl_pp = A_lat - B_lat @ K_pp
-    eigs_pp = la.eigvals(A_cl_pp)
-
-    print("\nActual  closed-loop poles :", np.round(eigs_pp, 4))
-    print("Desired closed-loop poles :", desired_poles_pp)
-
-    # ─────────────────────────────────────────────────────────────────────────────
-    # SIMULATION
-    # ─────────────────────────────────────────────────────────────────────────────
-    sol_pp, phi_pp = simulate_lateral_closed_loop(
-        K_pp,
-        z0,
-        t_span,
-        t_eval
-    )
-
-    # ─────────────────────────────────────────────────────────────────────────────
-    # AFFICHAGE (plots)
-    # ─────────────────────────────────────────────────────────────────────────────
-    fig_pp, axes_pp = plt.subplots(1, 3, figsize=(14, 4))
-
-    # Δx(t)
-    axes_pp[0].plot(t_eval, sol_pp.y[0], lw=2)
-    axes_pp[0].axhline(0, linestyle="--")
-    axes_pp[0].set_title(r"$\Delta x(t)$ (m)")
-    axes_pp[0].set_xlabel("time (s)")
-    axes_pp[0].grid(True)
-
-    # Δθ(t)
-    axes_pp[1].plot(t_eval, sol_pp.y[2] * 180/np.pi, lw=2)
-    axes_pp[1].axhline(0, linestyle="--")
-    axes_pp[1].set_title(r"$\Delta\theta(t)$ (°)")
-    axes_pp[1].set_xlabel("time (s)")
-    axes_pp[1].grid(True)
-
-    # Δφ(t)
-    axes_pp[2].plot(t_eval, phi_pp * 180/np.pi, lw=2)
-    axes_pp[2].axhline(0, linestyle="--")
-    axes_pp[2].set_title(r"$\Delta\phi(t)$ (°)")
-    axes_pp[2].set_xlabel("time (s)")
-    axes_pp[2].grid(True)
-
-    fig_pp.suptitle(f"Pole Placement Controller — K_pp = {np.round(K_pp, 3)}")
-
-    plt.tight_layout()
-    plt.show()
+def _():
     return
 
 
