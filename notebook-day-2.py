@@ -1903,6 +1903,219 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    **LQR design:**
+
+    We minimize the quadratic cost
+
+    $$
+    J = \int_0^\infty \bigl(z^\top Q\, z + R\, u^2\bigr)\, dt
+    $$
+
+    where $Q \succeq 0$ penalizes state deviations and $R > 0$ penalizes control effort.
+
+    The optimal gain is $K_{oc} = R^{-1} B_{lat}^\top P$ where $P$ is the solution of the algebraic Riccati equation:
+
+    $$
+    A_{lat}^\top P + P A_{lat} - P B_{lat} R^{-1} B_{lat}^\top P + Q = 0.
+    $$
+
+    **Parameter choice:**
+    - Penalize $\Delta x$ heavily ($Q_{11}$) to ensure $\Delta x \to 0$ in 20 s.
+    - Penalize $\Delta\theta$ to keep the tilt small.
+    - Moderate $R$ to keep $|\Delta\phi| < \pi/2$.
+
+    We use `scipy.linalg.solve_continuous_are` to solve the Riccati equation.
+    """)
+    return
+
+
+@app.cell
+def _(A_lat, B_lat, la, np, scipy):
+    # LQR design
+    Q_lqr = np.diag([1.0, 0.1, 10.0, 1.0])  # penalize x, xdot, theta, thetadot
+    R_lqr = np.array([[5.0]])                 # penalize phi
+
+    # Solve algebraic Riccati equation
+    P_lqr = scipy.linalg.solve_continuous_are(A_lat, B_lat, Q_lqr, R_lqr)
+    K_oc = (np.linalg.inv(R_lqr) @ B_lat.T @ P_lqr)  # shape (1, 4)
+
+    print("LQR gain matrix K_oc =", np.round(K_oc, 6))
+
+    # Closed-loop eigenvalues
+    A_cl_oc = A_lat - B_lat @ K_oc
+    eigs_oc = la.eigvals(A_cl_oc)
+    print("\nClosed-loop eigenvalues (LQR):", np.round(eigs_oc, 4))
+    print("All stable:", all(eigs_oc.real < 0))
+    return (K_oc,)
+
+
+@app.cell
+def _(A_lat, B_lat, K_oc, np, plt, scipy):
+    def simulate_lqr(K, t_end=25.0):
+
+        # Initial condition
+        z0 = np.array([
+            0.0,
+            0.0,
+            np.pi / 4,
+            0.0
+        ])
+
+        # Time vector
+        t_eval = np.linspace(0, t_end, 1000)
+
+        # Closed-loop dynamics
+        def ode(t, z):
+
+            # Feedback control law
+            u = (-(K @ z)).item()
+
+            # State equation
+            dz = A_lat @ z + B_lat.flatten() * u
+
+            return dz
+
+        # Numerical integration
+        sol = scipy.integrate.solve_ivp(
+            ode,
+            [0, t_end],
+            z0,
+            t_eval=t_eval
+        )
+
+        # Reconstruct control signal
+        phi_t = np.array([
+            (-(K @ sol.y[:, i])).item()
+            for i in range(sol.y.shape[1])
+        ])
+
+        return sol.t, sol.y, phi_t
+
+
+    # Run simulation
+    t_oc, z_oc, phi_oc = simulate_lqr(K_oc)
+
+
+    # ==========================================
+    # Plots
+    # ==========================================
+
+    fig_oc, axes_oc = plt.subplots(
+        1,
+        3,
+        figsize=(14, 4)
+    )
+
+    # ------------------------------------------
+    # Lateral position
+    # ------------------------------------------
+
+    axes_oc[0].plot(
+        t_oc,
+        z_oc[0],
+        lw=2,
+        color="steelblue"
+    )
+
+    axes_oc[0].set_title(
+        r"Lateral position $\Delta x(t)$"
+    )
+
+    axes_oc[0].set_xlabel("time (s)")
+    axes_oc[0].set_ylabel(r"$\Delta x$ (m)")
+    axes_oc[0].grid(True)
+
+
+    # ------------------------------------------
+    # Tilt angle
+    # ------------------------------------------
+
+    axes_oc[1].plot(
+        t_oc,
+        np.degrees(z_oc[2]),
+        lw=2,
+        color="tomato"
+    )
+
+    axes_oc[1].axhline(
+        90,
+        color="r",
+        ls="--",
+        lw=1,
+        label=r"$\pm90^\circ$ limit"
+    )
+
+    axes_oc[1].axhline(
+        -90,
+        color="r",
+        ls="--",
+        lw=1
+    )
+
+    axes_oc[1].set_title(
+        r"Tilt angle $\Delta\theta(t)$"
+    )
+
+    axes_oc[1].set_xlabel("time (s)")
+    axes_oc[1].set_ylabel(r"$\Delta\theta$ (°)")
+    axes_oc[1].legend(fontsize=8)
+    axes_oc[1].grid(True)
+
+
+    # ------------------------------------------
+    # Control input
+    # ------------------------------------------
+
+    axes_oc[2].plot(
+        t_oc,
+        np.degrees(phi_oc),
+        lw=2,
+        color="darkorange"
+    )
+
+    axes_oc[2].axhline(
+        90,
+        color="r",
+        ls="--",
+        lw=1,
+        label=r"$\pm90^\circ$ limit"
+    )
+
+    axes_oc[2].axhline(
+        -90,
+        color="r",
+        ls="--",
+        lw=1
+    )
+
+    axes_oc[2].set_title(
+        r"Control angle $\Delta\phi(t)$"
+    )
+
+    axes_oc[2].set_xlabel("time (s)")
+    axes_oc[2].set_ylabel(r"$\Delta\phi$ (°)")
+    axes_oc[2].legend(fontsize=8)
+    axes_oc[2].grid(True)
+
+
+    # ------------------------------------------
+    # Global figure
+    # ------------------------------------------
+
+    plt.suptitle(
+        "LQR Optimal Controller",
+        fontsize=13
+    )
+
+    plt.tight_layout()
+
+    plt.gcf()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 🧩 Validation
 
     Test the two control strategies (pole placement and optimal control) on the "true" (nonlinear) model with an animation. Check that both controllers achieve their goal; otherwise, go back to the drawing board and tweak the design parameters until they do!
