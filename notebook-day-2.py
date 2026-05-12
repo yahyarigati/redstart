@@ -1594,25 +1594,71 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    **Theoretical analysis:**
+    ###  Theoretical Analysis
 
-    With $K = [0, 0, k_3, k_4]$, the control law is:
-    $$\Delta\phi = -k_3 \Delta\theta - k_4 \Delta\dot{\theta}$$
+    Let the gain vector be defined as:
 
-    Substituting into $\Delta\ddot{\theta} = -\alpha\Delta\phi$:
-    $$\Delta\ddot{\theta} = -\alpha(-k_3\Delta\theta - k_4\Delta\dot{\theta}) = \alpha k_3\Delta\theta + \alpha k_4\Delta\dot{\theta}$$
+    $$
+    K = [0,\;0,\;k_3,\;k_4]
+    $$
 
-    Rearranging: $\Delta\ddot{\theta} - \alpha k_4\Delta\dot{\theta} - \alpha k_3\Delta\theta = 0$
+    The control law is given by:
 
-    Characteristic polynomial: $s^2 - \alpha k_4 s - \alpha k_3$
+    $$
+    \Delta \phi = -k_3 \Delta \theta - k_4 \Delta \dot{\theta}
+    $$
 
-    For stability we need **both roots to have negative real parts**, which requires:
-    - $k_3 > 0$ (positive position gain)
-    - $k_4 > 0$ (positive damping gain)
+    Substituting this expression into the system dynamics:
 
-    For convergence in ~20 s, we want poles around $\text{Re}(p) \approx -0.3$ to $-0.5$.
+    $$
+    \Delta \ddot{\theta} = -\alpha \Delta \phi
+    $$
 
-    **Iterative design (trial and error):**
+    we obtain:
+
+    $$
+    \Delta \ddot{\theta}
+    = -\alpha(-k_3 \Delta \theta - k_4 \Delta \dot{\theta})
+    $$
+
+    $$
+    = \alpha k_3 \Delta \theta + \alpha k_4 \Delta \dot{\theta}
+    $$
+
+    ###  Characteristic Polynomial
+
+    The associated characteristic polynomial is:
+
+    $$
+    s^2 - \alpha k_4 s - \alpha k_3 = 0
+    $$
+
+
+    ###  Stability Condition
+
+    For a second-order system of the form:
+
+    $$
+    s^2 + a_1 s + a_0
+    $$
+
+    stability requires:
+
+    $$
+    a_1 > 0 \quad \text{and} \quad a_0 > 0
+    $$
+
+    In our case, we identify:
+
+    $$
+    a_1 = -\alpha k_4, \quad a_0 = -\alpha k_3
+    $$
+
+    Therefore, assuming $\alpha > 0$, the stability conditions become:
+
+    $$
+    k_3 < 0, \quad k_4 < 0
+    $$
     """)
     return
 
@@ -1622,21 +1668,21 @@ def _(A_lat, B_lat, np, plt, solve_ivp):
     # ── Simulation function ───────────────────────────────────────────────────
     def simulate_lateral_closed_loop(K, z0, t_span, t_eval):
         """Simulate the lateral system with state feedback Δφ = -K·z."""
-    
+
         A_cl = A_lat - B_lat @ K   # closed-loop system matrix
 
         def dyn(t, z):
             return A_cl @ z
 
         sol = solve_ivp(dyn, t_span, z0, t_eval=t_eval, dense_output=True)
-    
+
         phi_t = -(K @ sol.y)[0]   # control signal applied over time
-    
+
         return sol, phi_t
 
 
     # ── Simulation setup (RENAMED VARIABLES) ──────────────────────────────────
-    theta0_cl = 45 / 180 * np.pi
+    theta0_cl = np.pi / 4
 
     z0_cl = np.array([0.0, 0.0, theta0_cl, 0.0])
 
@@ -1646,9 +1692,9 @@ def _(A_lat, B_lat, np, plt, solve_ivp):
 
     # ── Iterative manual tuning ───────────────────────────────────────────────
     candidates = {
-        "Trial 1 : k3=1, k4=1  (too slow)"  : np.array([[0, 0, 1.0, 1.0]]),
-        "Trial 2 : k3=2, k4=3  (better)"    : np.array([[0, 0, 2.0, 3.0]]),
-        "Trial 3 : k3=3, k4=4  ✓ (good)"    : np.array([[0, 0, 3.0, 4.0]]),
+        "Trial 1 : k3=-1, k4=-1  (too slow)"  : np.array([[0, 0, -1.0, -1.0]]),
+        "Trial 2 : k3=-2, k4=-3  (better)"    : np.array([[0, 0, -2.0, -3.0]]),
+        "Trial 3 : k3=-3, k4=-4  ✓ (good)"    : np.array([[0, 0, -3.0, -4.0]]),
     }
 
 
@@ -1659,10 +1705,10 @@ def _(A_lat, B_lat, np, plt, solve_ivp):
 
     for (label, K), color in zip(candidates.items(), colors):
         sol, phi_t = simulate_lateral_closed_loop(K, z0_cl, t_span_cl, t_eval_cl)
-    
+
         axes_cl[0].plot(t_eval_cl, sol.y[2] * 180/np.pi,
                         label=label, color=color, lw=2)
-    
+
         axes_cl[1].plot(t_eval_cl, phi_t * 180/np.pi,
                         label=label, color=color, lw=2)
 
@@ -1681,18 +1727,7 @@ def _(A_lat, B_lat, np, plt, solve_ivp):
 
     plt.tight_layout()
     plt.show()
-    return
-
-
-@app.cell
-def _(A_lat, B_lat, la, np):
-    # ── Closed-loop poles for the best manual gain ────────────────────────────
-    K_manual = np.array([[0, 0, 3.0, 4.0]])
-    A_cl_manual = A_lat - B_lat @ K_manual
-    eigs_manual = la.eigvals(A_cl_manual)
-
-    print("Closed-loop poles (manual) :", np.round(eigs_manual, 3))
-    return
+    return (simulate_lateral_closed_loop,)
 
 
 @app.cell(hide_code=True)
@@ -1700,21 +1735,7 @@ def _(mo):
     mo.md(r"""
     ### Analysis of the manual controller
 
-    With $K = [0,\, 0,\, 3,\, 4]$:
-
-    | Requirement | Result |
-    |-------------|--------|
-    | $\Delta\theta(t) \to 0$ in < 20 s |  converges in ~15 s |
-    | $\|\Delta\theta(t)\| < \pi/2$ always |  satisfied |
-    | $\|\Delta\phi(t)\| < \pi/2$ always |  satisfied |
-    | $\Delta x(t) \to 0$ | diverges (poles at 0, since $k_1=k_2=0$) |
-
-    The two poles associated with the angle dynamics are at $\approx -1.45 \pm 1.45j$ (stable),
-    but the two poles associated with $x$ remain at $0$ (marginally stable at best).
-
-    The system is **not** asymptotically stable overall — $x$ drifts away.
-     This is acceptable for this exercise (we only targeted $\theta$), but
-     we need all four gains to be non-zero for full stabilization.
+    All the K selected respect the conditions above!
     """)
     return
 
@@ -1755,6 +1776,117 @@ def _(mo):
 
     Explain how you find the proper design parameters!
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    **Pole placement** is a systematic method: given a controllable system $(A, B)$,
+    we choose desired poles $\{p_1, p_2, p_3, p_4\}$ with $\text{Re}(p_i) < 0$,
+    then compute $K$ such that the characteristic polynomial of $(A - BK)$ equals $\prod_i (s - p_i)$.
+
+    **Choosing the poles:**
+    - For convergence in ~10–15 s, we want $|\text{Re}(p)| \approx 0.3$ to $0.5$
+      (time constant $\tau = 1/|\text{Re}(p)|$, converge in $\approx 4\tau$).
+    - Complex conjugate pairs give oscillatory but damped convergence.
+    - All four poles must be at strictly negative real parts for full asymptotic stability.
+
+    **Selected poles:**
+    $$\{-0.3,\; -0.4,\; -0.5 + 0.3j,\; -0.5 - 0.3j\}$$
+
+    These give:
+    - Slowest time constant: $\tau = 1/0.3 \approx 3.3$ s → converges in $\approx 4 \times 3.3 \approx 13$ s
+    - Gentle oscillation from the complex pair (damping ratio $\approx 0.86$)
+    """)
+    return
+
+
+@app.cell
+def _(A_lat, B_lat, la, np, plt, simulate_lateral_closed_loop):
+
+    from scipy.signal import place_poles
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # CONDITIONS INITIALES + TEMPS
+    # ─────────────────────────────────────────────────────────────────────────────
+    z0 = np.array([
+        0.1,               # Δx (m)
+        0.0,               # vitesse
+        5*np.pi/180,      # Δθ (rad)
+        0.0                # vitesse angulaire
+    ])
+
+    t_span = (0, 10)
+    t_eval = np.linspace(0, 10, 300)
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # POLES DESIRES
+    # ─────────────────────────────────────────────────────────────────────────────
+    desired_poles_pp = np.array([
+        -0.3,
+        -0.4,
+        -0.5 + 0.3j,
+        -0.5 - 0.3j
+    ])
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # CALCUL DU GAIN K (Pole Placement)
+    # ─────────────────────────────────────────────────────────────────────────────
+    result_pp = place_poles(A_lat, B_lat, desired_poles_pp)
+    K_pp = result_pp.gain_matrix
+
+    print("K_pp (pole placement) =", np.round(K_pp, 4))
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # VERIFICATION DES POLES
+    # ─────────────────────────────────────────────────────────────────────────────
+    A_cl_pp = A_lat - B_lat @ K_pp
+    eigs_pp = la.eigvals(A_cl_pp)
+
+    print("\nActual  closed-loop poles :", np.round(eigs_pp, 4))
+    print("Desired closed-loop poles :", desired_poles_pp)
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # SIMULATION
+    # ─────────────────────────────────────────────────────────────────────────────
+    sol_pp, phi_pp = simulate_lateral_closed_loop(
+        K_pp,
+        z0,
+        t_span,
+        t_eval
+    )
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # AFFICHAGE (plots)
+    # ─────────────────────────────────────────────────────────────────────────────
+    fig_pp, axes_pp = plt.subplots(1, 3, figsize=(14, 4))
+
+    # Δx(t)
+    axes_pp[0].plot(t_eval, sol_pp.y[0], lw=2)
+    axes_pp[0].axhline(0, linestyle="--")
+    axes_pp[0].set_title(r"$\Delta x(t)$ (m)")
+    axes_pp[0].set_xlabel("time (s)")
+    axes_pp[0].grid(True)
+
+    # Δθ(t)
+    axes_pp[1].plot(t_eval, sol_pp.y[2] * 180/np.pi, lw=2)
+    axes_pp[1].axhline(0, linestyle="--")
+    axes_pp[1].set_title(r"$\Delta\theta(t)$ (°)")
+    axes_pp[1].set_xlabel("time (s)")
+    axes_pp[1].grid(True)
+
+    # Δφ(t)
+    axes_pp[2].plot(t_eval, phi_pp * 180/np.pi, lw=2)
+    axes_pp[2].axhline(0, linestyle="--")
+    axes_pp[2].set_title(r"$\Delta\phi(t)$ (°)")
+    axes_pp[2].set_xlabel("time (s)")
+    axes_pp[2].grid(True)
+
+    fig_pp.suptitle(f"Pole Placement Controller — K_pp = {np.round(K_pp, 3)}")
+
+    plt.tight_layout()
+    plt.show()
     return
 
 
