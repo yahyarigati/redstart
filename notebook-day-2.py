@@ -1087,6 +1087,49 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    An **equilibrium** is a constant state $\bar{s}$ with constant inputs $\bar{f}, \bar{\phi}$ such that $\dot{s} = F(\bar{s}, \bar{f}, \bar{\phi}) = 0$.
+
+    Setting all time derivatives to zero in the vector field:
+
+    $$
+    F(s, f, \phi) =
+    \begin{bmatrix}
+    v_x \\
+    -(f/M)\sin(\theta+\phi) \\
+    v_y \\
+    (f/M)\cos(\theta+\phi) - g \\
+    \omega \\
+    -(f/J)(\ell/2)\sin\phi
+    \end{bmatrix} = 0
+    $$
+
+    **Condition 1 — Velocities must vanish:**
+    $$v_x = v_y = \omega = 0$$
+
+    **Condition 2 — Angular torque must vanish:**
+    $$-(f/J)(\ell/2)\sin\phi = 0 \quad \xrightarrow{f>0,\, \ell>0} \quad \sin\phi = 0 \implies \boxed{\bar{\phi} = 0}$$
+    (since $|\phi|<\pi/2$, the only solution is $\phi=0$)
+
+    **Condition 3 — Horizontal acceleration must vanish:**
+    $$-(f/M)\sin(\theta + 0) = 0 \implies \sin\theta = 0 \implies \boxed{\bar{\theta} = 0}$$
+    (since $|\theta|<\pi/2$)
+
+    **Condition 4 — Vertical acceleration must vanish:**
+    $$(f/M)\cos(0) - g = 0 \implies \boxed{\bar{f} = Mg}$$
+
+    The coordinates $(x, y)$ can be **arbitrary** — any lateral position $\bar{x}$ and any altitude $\bar{y}$ are valid.
+
+    > **Conclusion:** The equilibria are all points $(\bar{x},\, 0,\, \bar{y},\, 0,\, 0,\, 0)$ for any $\bar{x}, \bar{y} \in \mathbb{R}$,
+    > with equilibrium inputs $\bar{f} = Mg$ and $\bar{\phi} = 0$.
+    >
+    > Physically: the booster hovers vertically with thrust exactly balancing gravity.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 🧩 Linearized Model
 
     Introduce the error variables $\Delta x$, $\Delta y$, $\Delta \theta$, and $\Delta f$ and $\Delta \phi$ of the state and input values with respect to the generic equilibrium configuration.
