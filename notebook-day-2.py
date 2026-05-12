@@ -1119,10 +1119,10 @@ def _(mo):
 
     The coordinates $(x, y)$ can be **arbitrary** — any lateral position $\bar{x}$ and any altitude $\bar{y}$ are valid.
 
-    > **Conclusion:** The equilibria are all points $(\bar{x},\, 0,\, \bar{y},\, 0,\, 0,\, 0)$ for any $\bar{x}, \bar{y} \in \mathbb{R}$,
-    > with equilibrium inputs $\bar{f} = Mg$ and $\bar{\phi} = 0$.
-    >
-    > Physically: the booster hovers vertically with thrust exactly balancing gravity.
+     **Conclusion:** The equilibria are all points $(\bar{x},\, 0,\, \bar{y},\, 0,\, 0,\, 0)$ for any $\bar{x}, \bar{y} \in \mathbb{R}$,
+     with equilibrium inputs $\bar{f} = Mg$ and $\bar{\phi} = 0$.
+
+     Physically: the booster hovers vertically with thrust exactly balancing gravity.
     """)
     return
 
@@ -1134,6 +1134,50 @@ def _(mo):
 
     Introduce the error variables $\Delta x$, $\Delta y$, $\Delta \theta$, and $\Delta f$ and $\Delta \phi$ of the state and input values with respect to the generic equilibrium configuration.
     What are the linear ordinary differential equations that govern (approximately) these variables in a neighbourhood of the equilibrium?
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    We set:
+    $$x = \bar{x} + \Delta x, \quad y = \bar{y} + \Delta y, \quad \theta = 0 + \Delta\theta, \quad f = Mg + \Delta f, \quad \phi = 0 + \Delta\phi$$
+
+    We expand each equation to **first order** around $(\Delta\theta, \Delta\phi, \Delta f) = (0,0,0)$,
+    using the approximations $\sin(\varepsilon) \approx \varepsilon$ and $\cos(\varepsilon) \approx 1$
+    for small $\varepsilon$.
+
+    #### Horizontal acceleration
+
+    $$M\ddot{x} = -f\sin(\theta+\phi) \approx -(Mg+\Delta f)(\Delta\theta + \Delta\phi) \approx -Mg(\Delta\theta + \Delta\phi)$$
+
+    (We drop the second-order term $\Delta f \cdot (\Delta\theta + \Delta\phi)$.) This gives:
+
+    $$\boxed{\Delta\ddot{x} = -g(\Delta\theta + \Delta\phi)}$$
+
+    #### Vertical acceleration
+
+    $$M\ddot{y} = f\cos(\theta+\phi) - Mg \approx (Mg+\Delta f)\cdot 1 - Mg = \Delta f$$
+
+    $$\boxed{\Delta\ddot{y} = \frac{\Delta f}{M}}$$
+
+    #### Angular acceleration
+
+    $$J\ddot{\theta} = -f\frac{\ell}{2}\sin\phi \approx -Mg\frac{\ell}{2}\Delta\phi$$
+
+    $$\boxed{\Delta\ddot{\theta} = -\frac{Mg\ell}{2J}\,\Delta\phi \;\triangleq\; -\alpha\,\Delta\phi}$$
+
+    where we define $\alpha = \frac{Mg\ell}{2J}$.
+
+    With our numerical constants ($g=M=1$, $\ell=2$, $J=1/3$):
+    $$\alpha = \frac{1 \cdot 1 \cdot 2}{2 \cdot 1/3} = 3$$
+
+     The three degrees of freedom **decouple** in the linearized model:
+    - Vertical dynamics: governed by $\Delta f$ alone.
+    - Lateral + angular dynamics: governed by $\Delta\phi$ alone.
+
+     This decoupling makes the controller design much simpler.
     """)
     return
 
