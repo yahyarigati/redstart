@@ -1266,7 +1266,7 @@ def _(J, M, g, l, np):
 
     print("\nA =\n", A)
     print("\nB =\n", B)
-    return A, B
+    return A, B, alpha
 
 
 @app.cell(hide_code=True)
@@ -1367,7 +1367,7 @@ def _(A, B, np):
     print(f"State dimension  n = {n}")
     print(f"Rank of controllability matrix : {rank_C}")
     print(f"Controllable : {rank_C == n}")
-    return
+    return (controllability_matrix,)
 
 
 @app.cell(hide_code=True)
@@ -1391,6 +1391,76 @@ def _(mo):
     - What are the new (reduced) matrices $A$ and $B$ for this reduced system?
 
     - Check the controllability of this new system.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    **Reduced state:** $z = (\Delta x,\, \Delta\dot{x},\, \Delta\theta,\, \Delta\dot{\theta}) \in \mathbb{R}^4$
+
+    **Scalar control:** $u = \Delta\phi \in \mathbb{R}$
+
+    The relevant linearized equations are:
+
+    $$
+    \Delta\ddot{x} = -g(\Delta\theta + \Delta\phi), \qquad
+    \Delta\ddot{\theta} = -\alpha\,\Delta\phi
+    $$
+
+    with $\alpha = Mg\ell/(2J) = 3$. This gives:
+
+    $$
+    A_\text{lat} =
+    \begin{bmatrix}
+    0 & 1 & 0 & 0 \\
+    0 & 0 & -g & 0 \\
+    0 & 0 & 0 & 1 \\
+    0 & 0 & 0 & 0
+    \end{bmatrix},
+    \qquad
+    B_\text{lat} =
+    \begin{bmatrix}
+    0 \\ -g \\ 0 \\ -\alpha
+    \end{bmatrix}
+    $$
+
+    **Note:** $\Delta x$ is coupled to $\Delta\theta$ through $A_{\text{lat}}$ (the $-g$ entry in row 2),
+    and both are driven by $\Delta\phi$ through $B_{\text{lat}}$.
+    The tilt can be controlled directly by $\phi$, and through the tilt we indirectly control $x$.
+    """)
+    return
+
+
+@app.cell
+def _(alpha, controllability_matrix, g, np):
+    A_lat = np.array([
+        [0,  1,   0,  0],
+        [0,  0,  -g,  0],
+        [0,  0,   0,  1],
+        [0,  0,   0,  0],
+    ], dtype=float)
+
+    B_lat = np.array([[0], [-g], [0], [-alpha]], dtype=float)
+
+    print("A_lat =\n", A_lat)
+    print("\nB_lat =\n", B_lat)
+
+    C_lat = controllability_matrix(A_lat, B_lat)
+    rank_lat = np.linalg.matrix_rank(C_lat)
+    print(f"\nRank of lateral controllability matrix : {rank_lat} / {A_lat.shape[0]}")
+    print(f"Controllable : {rank_lat == A_lat.shape[0]}")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The reduced lateral system $(A_\text{lat}, B_\text{lat})$ is controllable (rank = 4).
+
+    This is good news: with a single input $\Delta\phi$, we can simultaneously stabilize both
+    the tilt angle $\theta$ and the lateral position $x$.
     """)
     return
 
