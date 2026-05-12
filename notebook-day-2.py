@@ -2123,5 +2123,115 @@ def _(mo):
     return
 
 
+@app.cell
+def _(J, M, g, l, np, plt, solve_ivp):
+    def _():
+        # State dynamics
+        def F(s, f, phi):
+            x, vx, y, vy, theta, omega = s
+
+            return np.array([
+                vx,
+                -(f / M) * np.sin(theta + phi),
+                vy,
+                (f / M) * np.cos(theta + phi) - g,
+                omega,
+                -(f / J) * (l / 2) * np.sin(phi)
+            ])
+
+        # Closed-loop simulation with f = Mg and phi = -K z
+        def simulate_lateral_closed_loop(K, s0, t_span, t_eval):
+            K = np.asarray(K).reshape(4)
+
+            def dyn(t, s):
+                x, vx, y, vy, theta, omega = s
+
+                z = np.array([x, vx, theta, omega])
+                phi = -(K @ z)
+                f = M * g
+
+                return F(s, f, phi)
+
+            sol = solve_ivp(dyn, t_span, s0, t_eval=t_eval)
+
+            phi_t = np.array([
+                -(K @ np.array([sol.y[0, i], sol.y[1, i], sol.y[4, i], sol.y[5, i]]))
+                for i in range(sol.y.shape[1])
+            ])
+
+            return sol, phi_t
+
+
+        # Initial condition
+        theta0 = np.pi / 4   # 45 degrees in radians
+        s0 = np.array([0.0, 0.0, 0.0, 0.0, theta0, 0.0])
+
+        # Time
+        t_span = (0.0, 25.0)
+        t_eval = np.linspace(t_span[0], t_span[1], 1000)
+
+        # Controller gains: [kx, kvx, ktheta, komega]
+        K = [-1, -1.5, -2, -3] # Controller Tuned with Pole Assignment
+
+        # Run simulation
+        sol, phi_t = simulate_lateral_closed_loop(K, s0, t_span, t_eval)
+
+        # Plot x(t), theta(t), phi(t)
+        plt.figure(figsize=(10, 6))
+
+        plt.subplot(3, 1, 1)
+        plt.plot(sol.t, sol.y[0])
+        plt.ylabel("x(t)")
+        plt.grid(True)
+
+        plt.subplot(3, 1, 2)
+        plt.plot(sol.t, sol.y[4])
+        plt.ylabel(r"$\theta(t)$")
+        plt.grid(True)
+
+        plt.subplot(3, 1, 3)
+        plt.plot(sol.t, phi_t)
+        plt.ylabel(r"$\phi(t)$")
+        plt.xlabel("t")
+        plt.grid(True)
+
+        plt.tight_layout()
+
+
+
+    
+        # Controller gains: [kx, kvx, ktheta, komega]
+        K = [0.447214, 1.520999, -2.564142, -1.853205] # Controller Tuned with Optimal Control
+
+        # Run simulation
+        sol, phi_t = simulate_lateral_closed_loop(K, s0, t_span, t_eval)
+
+        # Plot x(t), theta(t), phi(t)
+        plt.figure(figsize=(10, 6))
+
+        plt.subplot(3, 1, 1)
+        plt.plot(sol.t, sol.y[0])
+        plt.ylabel("x(t)")
+        plt.grid(True)
+
+        plt.subplot(3, 1, 2)
+        plt.plot(sol.t, sol.y[4])
+        plt.ylabel(r"$\theta(t)$")
+        plt.grid(True)
+
+        plt.subplot(3, 1, 3)
+        plt.plot(sol.t, phi_t)
+        plt.ylabel(r"$\phi(t)$")
+        plt.xlabel("t")
+        plt.grid(True)
+
+        plt.tight_layout()
+        return plt.show()
+
+
+    _()
+    return
+
+
 if __name__ == "__main__":
     app.run()
