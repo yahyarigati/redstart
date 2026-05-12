@@ -1266,7 +1266,7 @@ def _(J, M, g, l, np):
 
     print("\nA =\n", A)
     print("\nB =\n", B)
-    return (A,)
+    return A, B
 
 
 @app.cell(hide_code=True)
@@ -1333,6 +1333,50 @@ def _(mo):
     ## 🧩 Controllability
 
     Is the linearized model controllable?
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    **Kalman's controllability criterion:** The system $(A, B)$ is controllable if and only if the **controllability matrix**
+
+    $$\mathcal{C} = \begin{bmatrix} B & AB & A^2B & \cdots & A^{n-1}B \end{bmatrix} \in \mathbb{R}^{n \times nm}$$
+
+    has **full row rank** (rank $= n = 6$).
+
+    **Intuition:** This matrix captures all the directions in state space that the inputs can "reach" over time. If it has full rank, the inputs can steer the system to any desired state.
+    """)
+    return
+
+
+@app.cell
+def _(A, B, np):
+    def controllability_matrix(A, B):
+        n = A.shape[0]
+        cols = [B]
+        for _ in range(n - 1):
+            cols.append(A @ cols[-1])
+        return np.hstack(cols)
+
+    n = A.shape[0]
+    C_mat = controllability_matrix(A, B)
+    rank_C = np.linalg.matrix_rank(C_mat)
+
+    print(f"State dimension  n = {n}")
+    print(f"Rank of controllability matrix : {rank_C}")
+    print(f"Controllable : {rank_C == n}")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The full system $(A, B)$ is controllable (rank = 6 = $n$).
+
+    This means we can theoretically place the closed-loop poles anywhere in the complex plane,
+    and we can drive the system from any initial state to any target state in finite time.
     """)
     return
 
