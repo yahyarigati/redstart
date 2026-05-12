@@ -2233,5 +2233,13 @@ def _(J, M, g, l, np, plt, solve_ivp):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    les figures du Control optimal sont bonnes mais celles du pole placement non, il nous faut changrer les valeurs mais pas de temlps
+    """)
+    return
+
+
 if __name__ == "__main__":
     app.run()
