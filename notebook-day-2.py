@@ -1451,7 +1451,7 @@ def _(alpha, controllability_matrix, g, np):
     rank_lat = np.linalg.matrix_rank(C_lat)
     print(f"\nRank of lateral controllability matrix : {rank_lat} / {A_lat.shape[0]}")
     print(f"Controllable : {rank_lat == A_lat.shape[0]}")
-    return
+    return (A_lat,)
 
 
 @app.cell(hide_code=True)
@@ -1475,6 +1475,78 @@ def _(mo):
     - $\phi(t)=0$ at all times.
 
     What do you see? How do you explain it?
+    """)
+    return
+
+
+@app.cell
+def _(A_lat, np, plt):
+    from scipy.integrate import solve_ivp
+
+    # Initial conditions for the lateral reduced system
+    theta0  = np.pi / 4
+    z0_lat  = np.array([0.0, 0.0, theta0, 0.0])  # [Δx, Δẋ, Δθ, Δθ̇]
+
+    # Open-loop linear dynamics (φ = 0  →  u = 0)
+    def linear_open_loop(t, z):
+        return A_lat @ z   # + B_lat * 0
+
+    t_span = [0.0, 5.0]
+    t_eval = np.linspace(0, 5, 500)
+    sol_ol = solve_ivp(linear_open_loop, t_span, z0_lat,
+                       t_eval=t_eval, dense_output=True)
+
+    x_lin     = sol_ol.y[0]
+    theta_lin = sol_ol.y[2]
+
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+
+    axes[0].plot(t_eval, x_lin, color="steelblue", lw=2)
+    axes[0].set_title(r"$\Delta x(t)$ — lateral drift  (m)")
+    axes[0].set_xlabel("time  $t$  (s)")
+    axes[0].grid(True)
+
+    axes[1].plot(t_eval, theta_lin * 180 / np.pi, color="tomato", lw=2)
+    axes[1].axhline(0, color="grey", ls="--")
+    axes[1].set_title(r"$\Delta\theta(t)$ — tilt angle  (°)")
+    axes[1].set_xlabel("time  $t$  (s)")
+    axes[1].grid(True)
+
+    fig.suptitle(r"Open-loop linearized model — $\phi=0$, $\theta(0)=\pi/4$")
+    plt.tight_layout()
+    plt.show()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Observations and Explanation
+
+    **What we see:**
+
+    1. $\theta(t) = \pi/4 = \text{const}$ — the angle **stays fixed**.
+       Without $\phi \neq 0$, there is no torque, so the angular equation $\Delta\ddot{\theta} = -\alpha\Delta\phi = 0$
+       gives zero angular acceleration. The initial angle is "frozen".
+
+    2. $x(t)$ **diverges quadratically** — the booster drifts laterally at an accelerating rate.
+
+    **Mathematical explanation:**
+
+    Since $\Delta\theta = \pi/4 = \text{const}$, the lateral acceleration equation gives:
+    $$\Delta\ddot{x} = -g\,\Delta\theta = -g \cdot \frac{\pi}{4} \approx -0.785 \text{ m/s}^2 = \text{const}$$
+
+    Integrating twice:
+    $$\Delta x(t) \approx -\frac{g}{2}\cdot\frac{\pi}{4}\cdot t^2 = -\frac{\pi g}{8}\,t^2$$
+
+    This is a classic **double integrator** response.
+
+    **Physical interpretation:**
+
+     A tilted booster with no angular correction produces a constant horizontal thrust component,
+     which accelerates the booster sideways like a projectile. This is exactly why rockets use
+     active TVC (Thrust Vector Control): any uncorrected tilt causes an ever-growing lateral drift.
+     A state-feedback controller is essential.
     """)
     return
 
