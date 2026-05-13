@@ -2709,7 +2709,6 @@ def _(M, g, l, np):
 
 @app.cell
 def _(M, T_inv, Tr, g, np):
-    # Quick consistency check
     _state = np.array([5.0, 0.2, 20.0, -1.0, -np.pi / 8, 0.1, -M * g, 0.3])
     _recovered = T_inv(*Tr(*_state))
     np.allclose(_state, _recovered)
@@ -2755,6 +2754,116 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ### Solution
+
+    For each coordinate of \(h\), use a degree-seven Hermite polynomial. The value and first three derivatives are constrained at \(t=0\) and \(t=t_f\), giving exactly eight constraints per coordinate. We then evaluate \(h,\dot h,\ddot h,h^{(3)}\), recover the physical state with `T_inv`, and reconstruct the force.
+    """)
+    return
+
+
+@app.cell
+def _(M, T_inv, Tr, l, np):
+    def _poly7_from_boundary(y0, dy0, d2y0, d3y0, yf, dyf, d2yf, d3yf, tf):
+        A_poly = np.zeros((8, 8), dtype=float)
+        b_poly = np.array([y0, dy0, d2y0, d3y0, yf, dyf, d2yf, d3yf], dtype=float)
+
+        def derivative_row(t, order):
+            row = np.zeros(8, dtype=float)
+            for k in range(order, 8):
+                coeff = 1.0
+                for j in range(order):
+                    coeff *= k - j
+                row[k] = coeff * t ** (k - order)
+            return row
+
+        A_poly[0] = derivative_row(0.0, 0)
+        A_poly[1] = derivative_row(0.0, 1)
+        A_poly[2] = derivative_row(0.0, 2)
+        A_poly[3] = derivative_row(0.0, 3)
+        A_poly[4] = derivative_row(tf, 0)
+        A_poly[5] = derivative_row(tf, 1)
+        A_poly[6] = derivative_row(tf, 2)
+        A_poly[7] = derivative_row(tf, 3)
+        return np.linalg.solve(A_poly, b_poly)
+
+
+    def _poly_eval(coeffs, t, order=0):
+        t_arr = np.asarray(t, dtype=float)
+        out = np.zeros_like(t_arr, dtype=float)
+        for k in range(order, len(coeffs)):
+            coeff = coeffs[k]
+            for j in range(order):
+                coeff *= k - j
+            out = out + coeff * t_arr ** (k - order)
+        if np.isscalar(t):
+            return float(out)
+        return out
+
+
+    def _rotation(theta):
+        alpha = theta - np.pi / 2
+        return np.array([
+            [np.cos(alpha), -np.sin(alpha)],
+            [np.sin(alpha),  np.cos(alpha)],
+        ], dtype=float)
+
+
+    def _wrap_angle(angle):
+        return (angle + np.pi) % (2 * np.pi) - np.pi
+
+
+    def compute(
+        x_0, dx_0, y_0, dy_0, theta_0, dtheta_0, z_0, dz_0,
+        x_tf, dx_tf, y_tf, dy_tf, theta_tf, dtheta_tf, z_tf, dz_tf,
+        tf,
+    ):
+        initial_h = Tr(x_0, dx_0, y_0, dy_0, theta_0, dtheta_0, z_0, dz_0)
+        final_h = Tr(x_tf, dx_tf, y_tf, dy_tf, theta_tf, dtheta_tf, z_tf, dz_tf)
+
+        hx_coeffs = _poly7_from_boundary(
+            initial_h[0], initial_h[2], initial_h[4], initial_h[6],
+            final_h[0], final_h[2], final_h[4], final_h[6], tf,
+        )
+        hy_coeffs = _poly7_from_boundary(
+            initial_h[1], initial_h[3], initial_h[5], initial_h[7],
+            final_h[1], final_h[3], final_h[5], final_h[7], tf,
+        )
+
+        def fun(t):
+            h_x = _poly_eval(hx_coeffs, t, 0)
+            h_y = _poly_eval(hy_coeffs, t, 0)
+            dh_x = _poly_eval(hx_coeffs, t, 1)
+            dh_y = _poly_eval(hy_coeffs, t, 1)
+            d2h_x = _poly_eval(hx_coeffs, t, 2)
+            d2h_y = _poly_eval(hy_coeffs, t, 2)
+            d3h_x = _poly_eval(hx_coeffs, t, 3)
+            d3h_y = _poly_eval(hy_coeffs, t, 3)
+            d4h = np.array([_poly_eval(hx_coeffs, t, 4), _poly_eval(hy_coeffs, t, 4)])
+
+            x, dx, y, dy, theta, dtheta, z, dz = T_inv(
+                h_x, h_y, dh_x, dh_y, d2h_x, d2h_y, d3h_x, d3h_y
+            )
+
+            q = M * _rotation(theta).T @ d4h
+            v2 = q[1] - 2 * dz * dtheta
+            force_components = _rotation(theta) @ np.array([
+                z - M * l * dtheta ** 2 / 6,
+                M * l * v2 / (6 * z),
+            ])
+            f_x, f_y = force_components
+            f = np.hypot(f_x, f_y)
+            phi = _wrap_angle(np.arctan2(-f_x, f_y) - theta)
+
+            return np.array([x, dx, y, dy, theta, dtheta, z, dz, f, phi], dtype=float)
+
+        return fun
+
+    return (compute,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 🧩 Graphical Validation
 
     Test your `compute` function with
@@ -2764,6 +2873,57 @@ def _(mo):
     - `tf = 10.0`.
 
     Make the graph of the relevant variables as a function of time, then make an animation out of the same result. Comment and iterate if necessary!
+    """)
+    return
+
+
+@app.cell
+def _(M, compute, g, l, np, plt):
+    path_fun = compute(
+        5.0, 0.0, 20.0, -1.0, -np.pi / 8, 0.0, -M * g, 0.0,
+        0.0, 0.0, 2 / 3 * l, 0.0, 0.0, 0.0, -M * g, 0.0,
+        10.0,
+    )
+
+    t_grid = np.linspace(0.0, 10.0, 400)
+    values = np.array([path_fun(t) for t in t_grid])
+    labels = ["x", "dx", "y", "dy", "theta", "dtheta", "z", "dz", "f", "phi"]
+
+    fig, axes = plt.subplots(5, 2, figsize=(11, 12), sharex=True)
+    for ax, label, series in zip(axes.ravel(), labels, values.T):
+        ax.plot(t_grid, series)
+        ax.set_ylabel(label)
+        ax.grid(True, alpha=0.3)
+    axes[-1, 0].set_xlabel("time")
+    axes[-1, 1].set_xlabel("time")
+    fig.tight_layout()
+    return (path_fun,)
+
+
+@app.cell
+def _(booster_anim, mo, path_fun, world):
+    def exact_linearization_animation():
+        T = 10.0
+        x = lambda t: path_fun(t)[0]
+        y = lambda t: path_fun(t)[2]
+        theta = lambda t: path_fun(t)[4]
+        f = lambda t: path_fun(t)[8]
+        phi = lambda t: path_fun(t)[9]
+        return mo.Html(
+            world(
+                [-2, 7, -2, 22],
+                booster_anim(x, y, theta, f, phi, T),
+            )
+        )
+
+    exact_linearization_animation()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The path starts from the prescribed tilted state and reaches the final upright state at ground level. The graph is also useful for checking admissibility: in this construction z stays negative, so the inversion remains nonsingular, and the force and gimbal angle remain finite over the trajectory.
     """)
     return
 
