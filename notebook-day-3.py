@@ -2300,9 +2300,72 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ### Solution
+
+    Let \(a=\ell/6\). Since
+
+    $$
+    h_x=x-a\sin\theta,\qquad h_y=y+a\cos\theta,
+    $$
+
+    we have
+
+    $$
+    \dot h =
+    \begin{bmatrix}
+    \dot x-a\cos\theta\,\dot\theta\\
+    \dot y-a\sin\theta\,\dot\theta
+    \end{bmatrix}.
+    $$
+
+    After substituting the booster dynamics and the auxiliary force, the second derivative is
+
+    $$
+    \ddot h =
+    \begin{bmatrix}
+    (z/M)\sin\theta\\
+    -(z/M)\cos\theta-g
+    \end{bmatrix}.
+    $$
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 🧩 Third and Fourth-Order Derivatives
 
     Compute the third derivative $h^{(3)}$ of $h$ as a function of $\theta$ and $z$ (and constants) and then the fourth derivative $h^{(4)}$ of $h$ with respect to time as a function of $\theta$, $\dot{\theta}$, $z$, $\dot{z}$, $v$ (and constants) when the auxiliary system is on.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Solution
+
+    Differentiating the expression for \(\ddot h\) gives
+
+    $$
+    h^{(3)} =
+    \begin{bmatrix}
+    (\dot z/M)\sin\theta + (z/M)\cos\theta\,\dot\theta\\
+    -(\dot z/M)\cos\theta + (z/M)\sin\theta\,\dot\theta
+    \end{bmatrix}.
+    $$
+
+    Using \(\ddot z=v_1\) and \(\ddot\theta=v_2/z\), one more derivative gives
+
+    $$
+    h^{(4)}
+    = \frac{1}{M}R\left(\theta-\frac{\pi}{2}\right)
+    \begin{bmatrix}
+    v_1-z\dot\theta^2\\
+    2\dot z\dot\theta+v_2
+    \end{bmatrix}.
+    $$
     """)
     return
 
@@ -2317,6 +2380,34 @@ def _(mo):
     $$
     h^{(4)} = u
     $$
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Solution
+
+    Since \(R(\theta-\pi/2)\) is orthogonal, we can impose \(h^{(4)}=u\) by setting
+
+    $$
+    \begin{bmatrix}
+    v_1-z\dot\theta^2\\
+    2\dot z\dot\theta+v_2
+    \end{bmatrix}
+    =
+    M R\left(\theta-\frac{\pi}{2}\right)^T u.
+    $$
+
+    Equivalently, if \(w=M R(\theta-\pi/2)^Tu\), then
+
+    $$
+    v_1=z\dot\theta^2+w_1,\qquad
+    v_2=-2\dot z\dot\theta+w_2.
+    $$
+
+    This yields exactly \(h^{(4)}=u\).
     """)
     return
 
