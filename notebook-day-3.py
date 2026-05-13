@@ -2254,6 +2254,42 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ### Solution
+    The vector from the center of mass to the point \(h\) is
+
+    $$
+    \begin{bmatrix}-(\ell/6)\sin\theta \\ (\ell/6)\cos\theta\end{bmatrix}.
+    $$
+
+    So \(h\) is the point located on the booster axis at distance \(\ell/6\) above the center of mass. This point is chosen because the torque terms cancel in its second derivative, which is the key idea behind the exact linearization.
+    """)
+    return
+
+
+@app.cell
+def _(M, booster, g, l, mo, np, svg, world):
+    def draw_h_geometry():
+        theta = np.pi / 8
+        x, y = 0.0, 1.5
+        hx = x - (l / 6) * np.sin(theta)
+        hy = y + (l / 6) * np.cos(theta)
+        return mo.Html(
+            world(
+                [-2, 2, -1, 4],
+                booster(x, y, theta, M * g, 0),
+                svg.circle(cx=x, cy=y, r=0.05, fill="red"),
+                svg.circle(cx=hx, cy=hy, r=0.05, fill="blue"),
+                svg.line(x1=x, y1=y, x2=hx, y2=hy, stroke="blue", **{"stroke-width": 0.02}),
+            )
+        )
+
+    draw_h_geometry()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 🧩 First and Second-Order Derivatives
 
     Compute $\dot{h}$ as a function of $\dot{x}$, $\dot{y}$, $\theta$ and $\dot{\theta}$ (and constants) and then $\ddot{h}$ as a function of $\theta$ and $z$ (and constants) when the auxiliary system is plugged in the booster.
