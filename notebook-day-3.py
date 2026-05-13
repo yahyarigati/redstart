@@ -2422,6 +2422,23 @@ def _(mo):
     return
 
 
+@app.cell
+def _(M, g, l, np):
+    def Tr(x, dx, y, dy, theta, dtheta, z, dz):
+        a = l / 6
+        h_x = x - a * np.sin(theta)
+        h_y = y + a * np.cos(theta)
+        dh_x = dx - a * np.cos(theta) * dtheta
+        dh_y = dy - a * np.sin(theta) * dtheta
+        d2h_x = (z / M) * np.sin(theta)
+        d2h_y = -(z / M) * np.cos(theta) - g
+        d3h_x = (dz / M) * np.sin(theta) + (z / M) * np.cos(theta) * dtheta
+        d3h_y = -(dz / M) * np.cos(theta) + (z / M) * np.sin(theta) * dtheta
+        return np.array([h_x, h_y, dh_x, dh_y, d2h_x, d2h_y, d3h_x, d3h_y], dtype=float)
+
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
