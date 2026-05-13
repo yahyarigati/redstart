@@ -2346,7 +2346,7 @@ def _(mo):
     mo.md(r"""
     ### Solution
 
-    Differentiating the expression for \(\ddot h\) gives
+    Differentiating the expression for $\ddot h$ gives
 
     $$
     h^{(3)} =
@@ -2356,11 +2356,16 @@ def _(mo):
     \end{bmatrix}.
     $$
 
-    Using \(\ddot z=v_1\) and \(\ddot\theta=v_2/z\), one more derivative gives
+    Using $\ddot z = v_1$ and $\ddot\theta = v_2/z$, one more derivative gives
 
     $$
     h^{(4)}
-    = \frac{1}{M}R\left(\theta-\frac{\pi}{2}\right)
+    =
+    \frac{1}{M}
+    \begin{bmatrix}
+    \sin\theta & \cos\theta\\
+    -\cos\theta & \sin\theta
+    \end{bmatrix}
     \begin{bmatrix}
     v_1-z\dot\theta^2\\
     2\dot z\dot\theta+v_2
