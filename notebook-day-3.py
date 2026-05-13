@@ -2877,8 +2877,23 @@ def _(mo):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    We now validate the trajectory produced by `compute`. The animation is useful, but it is not enough by itself: we also need plots and comments showing that the constructed path satisfies the boundary conditions and remains admissible.
+
+    The checks below verify that:
+
+    - the initial and final states are recovered correctly,
+    - \(z\) remains strictly negative, so \(T^{-1}\) is never singular,
+    - the force magnitude \(f\) and the gimbal angle \(\phi\) remain finite,
+    - the physical trajectory of the center of mass reaches the target landing point.
+    """)
+    return
+
+
 @app.cell
-def _(M, compute, g, l, np, plt):
+def _(M, compute, g, l, np):
     path_fun = compute(
         5.0, 0.0, 20.0, -1.0, -np.pi / 8, 0.0, -M * g, 0.0,
         0.0, 0.0, 2 / 3 * l, 0.0, 0.0, 0.0, -M * g, 0.0,
@@ -2889,15 +2904,107 @@ def _(M, compute, g, l, np, plt):
     values = np.array([path_fun(t) for t in t_grid])
     labels = ["x", "dx", "y", "dy", "theta", "dtheta", "z", "dz", "f", "phi"]
 
-    fig, axes = plt.subplots(5, 2, figsize=(11, 12), sharex=True)
-    for ax, label, series in zip(axes.ravel(), labels, values.T):
-        ax.plot(t_grid, series)
-        ax.set_ylabel(label)
-        ax.grid(True, alpha=0.3)
-    axes[-1, 0].set_xlabel("time")
-    axes[-1, 1].set_xlabel("time")
-    fig.tight_layout()
-    return (path_fun,)
+    print("Initial state recovered from the trajectory:")
+    print(values[0, :8])
+    print("Final state recovered from the trajectory:")
+    print(values[-1, :8])
+    print(f"Maximum value of z along the path: {values[:, 6].max():.6f}")
+    print(f"Maximum absolute gimbal angle |phi|: {np.max(np.abs(values[:, 9])):.6f} rad")
+    return labels, path_fun, t_grid, values
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The printed values check the boundary conditions directly. The final state is the desired upright configuration at \(x=0\), \(y=2\ell/3\), with zero translational and angular velocities. The value of \(z\) stays below zero, which is essential because the inverse transformation uses the assumption \(z<0\).
+    """)
+    return
+
+
+@app.cell
+def _(l, plt, values):
+    fig, ax = plt.subplots(figsize=(7, 6))
+    ax.plot(values[:, 0], values[:, 2], label="center of mass trajectory")
+    ax.scatter(values[0, 0], values[0, 2], color="tab:green", label="initial state", zorder=3)
+    ax.scatter(values[-1, 0], values[-1, 2], color="tab:red", label="final state", zorder=3)
+    ax.axhline(2 / 3 * l, color="grey", linestyle="--", linewidth=1, label=r"target height $2\ell/3$")
+    ax.set_title("Physical trajectory of the booster center of mass")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.axis("equal")
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+    fig.tight_layout
+    plt.show()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    This plot shows the physical trajectory \((x(t),y(t))\) of the center of mass. It starts from the prescribed tilted state at high altitude and reaches the landing point at \(x=0\), \(y=2\ell/3\).
+    """)
+    return
+
+
+@app.cell
+def _(Tr, np, path_fun, plt, t_grid):
+    def _():
+        def _():
+            h_values = np.array([Tr(*path_fun(t)[:8])[:2] for t in t_grid])
+
+            fig, ax = plt.subplots(figsize=(7, 6))
+            ax.plot(h_values[:, 0], h_values[:, 1], label=r"output trajectory $h(t)$")
+            ax.scatter(h_values[0, 0], h_values[0, 1], color="tab:green", label="initial output", zorder=3)
+            ax.scatter(h_values[-1, 0], h_values[-1, 1], color="tab:red", label="final output", zorder=3)
+            ax.set_title("Trajectory of the exactly linearized output")
+            ax.set_xlabel(r"$h_x$")
+            ax.set_ylabel(r"$h_y$")
+            ax.axis("equal")
+            ax.grid(True, alpha=0.3)
+            ax.legend()
+            fig.tight_layout()
+            return plt.show()
+        return _()
+
+
+    _()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    This plot shows the trajectory of the output \(h\). This the the variable whose fourth derivative is directly controlled after exact linearization. The polynomial construction happens in this output space, then the physical booster state is recovered through \(T^{-1}\).
+    """)
+    return
+
+
+@app.cell
+def _(labels, plt, t_grid, values):
+    def _():
+        fig, axes = plt.subplots(5, 2, figsize=(11, 12), sharex=True)
+        for ax, label, series in zip(axes.ravel(), labels, values.T):
+            ax.plot(t_grid, series)
+            ax.set_ylabel(label)
+            ax.grid(True, alpha=0.3)
+        axes[-1, 0].set_xlabel("time")
+        axes[-1, 1].set_xlabel("time")
+        fig.suptitle("State, auxiliary variables, and control inputs over time", y=1.01)
+        fig.tight_layout()
+        return plt.show()
+
+
+    _()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The time plots complete the validation. The state variables reach the desired final values, while \(z\) remains negative and the input signals \(f\) and \(\phi\) remain finite. This confirms that the computed trajectory is admissible for the exact-linearization construction.
+    """)
+    return
 
 
 @app.cell
@@ -2923,7 +3030,7 @@ def _(booster_anim, mo, path_fun, world):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The path starts from the prescribed tilted state and reaches the final upright state at ground level. The graph is also useful for checking admissibility: in this construction z stays negative, so the inversion remains nonsingular, and the force and gimbal angle remain finite over the trajectory.
+    The animation is the final qualitative check. It confirms visually that the booster follows the plotted trajectory, gradually straightens, and reaches the target upright configuration without crossing the singular condition z = 0.
     """)
     return
 
