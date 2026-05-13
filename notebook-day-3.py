@@ -2394,7 +2394,56 @@ def _(mo):
     mo.md(r"""
     ### Solution
 
-    Since \(R(\theta-\pi/2)\) is orthogonal, we can impose \(h^{(4)}=u\) by setting
+    From the previous result, we have
+
+    $$
+    h^{(4)}
+    =
+    \frac{1}{M}
+    A(\theta)
+    \begin{bmatrix}
+    v_1-z\dot\theta^2\\
+    2\dot z\dot\theta+v_2
+    \end{bmatrix},
+    $$
+
+    where
+
+    $$
+    A(\theta)
+    =
+    \begin{bmatrix}
+    \sin\theta & \cos\theta\\
+    -\cos\theta & \sin\theta
+    \end{bmatrix}.
+    $$
+
+    The matrix \(A(\theta)\) is orthogonal, since
+
+    $$
+    A(\theta)^T A(\theta)=I.
+    $$
+
+    Therefore, to impose
+
+    $$
+    h^{(4)}=u,
+    $$
+
+    we need
+
+    $$
+    \frac{1}{M}
+    A(\theta)
+    \begin{bmatrix}
+    v_1-z\dot\theta^2\\
+    2\dot z\dot\theta+v_2
+    \end{bmatrix}
+    =
+    u.
+    $$
+
+    Multiplying by \(M A(\theta)^T\), we obtain
 
     $$
     \begin{bmatrix}
@@ -2402,17 +2451,47 @@ def _(mo):
     2\dot z\dot\theta+v_2
     \end{bmatrix}
     =
-    M R\left(\theta-\frac{\pi}{2}\right)^T u.
+    M A(\theta)^T u.
     $$
 
-    Equivalently, if \(w=M R(\theta-\pi/2)^Tu\), then
+    Let
 
     $$
-    v_1=z\dot\theta^2+w_1,\qquad
-    v_2=-2\dot z\dot\theta+w_2.
+    w =
+    M A(\theta)^T u.
     $$
 
-    This yields exactly \(h^{(4)}=u\).
+    Then
+
+    $$
+    \begin{bmatrix}
+    v_1-z\dot\theta^2\\
+    2\dot z\dot\theta+v_2
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+    w_1\\
+    w_2
+    \end{bmatrix}.
+    $$
+
+    Hence,
+
+    $$
+    v_1 = z\dot\theta^2 + w_1,
+    $$
+
+    and
+
+    $$
+    v_2 = -2\dot z\dot\theta + w_2.
+    $$
+
+    With this choice of \(v_1\) and \(v_2\), we obtain exactly
+
+    $$
+    h^{(4)} = u.
+    $$
     """)
     return
 
