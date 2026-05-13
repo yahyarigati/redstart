@@ -3002,6 +3002,14 @@ def _(labels, plt, t_grid, values):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    The graphs are bounded (respect the previous constraints) and show interesting patterns in terms of their convergence.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     The time plots complete the validation. The state variables reach the desired final values, while \(z\) remains negative and the input signals \(f\) and \(\phi\) remain finite. This confirms that the computed trajectory is admissible for the exact-linearization construction.
     """)
     return
