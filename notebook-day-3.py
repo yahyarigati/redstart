@@ -2520,6 +2520,7 @@ def _(M, g, l, np):
         d3h_y = -(dz / M) * np.cos(theta) + (z / M) * np.sin(theta) * dtheta
         return np.array([h_x, h_y, dh_x, dh_y, d2h_x, d2h_y, d3h_x, d3h_y], dtype=float)
 
+
     return
 
 
