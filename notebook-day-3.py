@@ -2509,21 +2509,32 @@ def _(mo):
     \end{bmatrix}.
     $$
 
-    Since \(R(\theta-\pi/2)\) is a rotation matrix, it is orthogonal:
-
-    $$
-    R\left(\theta-\frac{\pi}{2}\right)^T
-    R\left(\theta-\frac{\pi}{2}\right)
-    = I.
-    $$
-
-    To impose the desired fourth-order dynamics
+    We want to impose
 
     $$
     h^{(4)}=u,
+    \qquad
+    u=
+    \begin{bmatrix}
+    u_1\\
+    u_2
+    \end{bmatrix}.
     $$
 
-    we therefore need
+    Therefore,
+
+    $$
+    \frac{1}{M}
+    R\left(\theta-\frac{\pi}{2}\right)
+    \begin{bmatrix}
+    v_1-z\dot\theta^2\\
+    2\dot z\dot\theta+v_2
+    \end{bmatrix}
+    =
+    u.
+    $$
+
+    Multiplying both sides by \(M R(\theta-\pi/2)^T\), we obtain
 
     $$
     \begin{bmatrix}
@@ -2534,26 +2545,65 @@ def _(mo):
     M R\left(\theta-\frac{\pi}{2}\right)^T u.
     $$
 
-    Equivalently, define
+    Since
 
     $$
-    w=
-    M R\left(\theta-\frac{\pi}{2}\right)^T u
+    R\left(\theta-\frac{\pi}{2}\right)
     =
     \begin{bmatrix}
-    w_1\\
-    w_2
+    \sin\theta & \cos\theta\\
+    -\cos\theta & \sin\theta
+    \end{bmatrix},
+    $$
+
+    we have
+
+    $$
+    R\left(\theta-\frac{\pi}{2}\right)^T
+    =
+    \begin{bmatrix}
+    \sin\theta & -\cos\theta\\
+    \cos\theta & \sin\theta
     \end{bmatrix}.
     $$
 
-    Then
+    Thus,
 
     $$
-    v_1=z\dot\theta^2+w_1,\qquad
-    v_2=-2\dot z\dot\theta+w_2.
+    M R\left(\theta-\frac{\pi}{2}\right)^T u
+    =
+    M
+    \begin{bmatrix}
+    \sin\theta\,u_1-\cos\theta\,u_2\\
+    \cos\theta\,u_1+\sin\theta\,u_2
+    \end{bmatrix}.
     $$
 
-    This yields exactly \(h^{(4)}=u\).
+    Hence we choose
+
+    $$
+    v_1
+    =
+    z\dot\theta^2
+    +
+    M(\sin\theta\,u_1-\cos\theta\,u_2),
+    $$
+
+    and
+
+    $$
+    v_2
+    =
+    -2\dot z\dot\theta
+    +
+    M(\cos\theta\,u_1+\sin\theta\,u_2).
+    $$
+
+    With this choice, the transformed dynamics become exactly
+
+    $$
+    h^{(4)}=u.
+    $$
     """)
     return
 
