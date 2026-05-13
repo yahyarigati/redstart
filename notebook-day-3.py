@@ -2582,7 +2582,7 @@ def _(M, g, l, np):
         d3h_y = -(dz / M) * np.cos(theta) + (z / M) * np.sin(theta) * dtheta
         return np.array([h_x, h_y, dh_x, dh_y, d2h_x, d2h_y, d3h_x, d3h_y], dtype=float)
 
-    return
+    return (Tr,)
 
 
 @app.cell(hide_code=True)
@@ -2595,6 +2595,74 @@ def _(mo):
 
     Implement the corresponding function `T_inv`.
     """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Solution
+
+    Let
+
+    $$
+    w=\begin{bmatrix}\ddot h_x\\ \ddot h_y+g\end{bmatrix}.
+    $$
+
+    Then \(w=(z/M)(\sin\theta,-\cos\theta)^T\). Since \(z<0\),
+
+    $$
+    z=-M\|w\|,\qquad
+    \sin\theta=-w_x/\|w\|,\qquad
+    \cos\theta=w_y/\|w\|.
+    $$
+
+    Projecting \(h^{(3)}\) onto \(e=(\sin\theta,-\cos\theta)\) and \(p=(\cos\theta,\sin\theta)\) gives
+
+    $$
+    \dot z=M e^T h^{(3)},\qquad
+    \dot\theta=\frac{M p^T h^{(3)}}{z}.
+    $$
+
+    Finally, \(x,y,\dot x,\dot y\) follow from the definitions of \(h\) and \(\dot h\).
+    """)
+    return
+
+
+@app.cell
+def _(M, g, l, np):
+    def T_inv(h_x, h_y, dh_x, dh_y, d2h_x, d2h_y, d3h_x, d3h_y):
+        a = l / 6
+        w_x = d2h_x
+        w_y = d2h_y + g
+        norm_w = np.hypot(w_x, w_y)
+        if np.any(norm_w <= 1e-12):
+            raise ValueError("The inversion is singular when z is zero or too close to zero.")
+
+        z = -M * norm_w
+        sin_theta = -w_x / norm_w
+        cos_theta = w_y / norm_w
+        theta = np.arctan2(sin_theta, cos_theta)
+
+        dz = M * (sin_theta * d3h_x - cos_theta * d3h_y)
+        dtheta = M * (cos_theta * d3h_x + sin_theta * d3h_y) / z
+
+        x = h_x + a * sin_theta
+        y = h_y - a * cos_theta
+        dx = dh_x + a * cos_theta * dtheta
+        dy = dh_y + a * sin_theta * dtheta
+
+        return np.array([x, dx, y, dy, theta, dtheta, z, dz], dtype=float)
+
+    return (T_inv,)
+
+
+@app.cell
+def _(M, T_inv, Tr, g, np):
+    # Quick consistency check
+    _state = np.array([5.0, 0.2, 20.0, -1.0, -np.pi / 8, 0.1, -M * g, 0.3])
+    _recovered = T_inv(*Tr(*_state))
+    np.allclose(_state, _recovered)
     return
 
 
