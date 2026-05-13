@@ -2194,7 +2194,7 @@ def _(mo):
     Let
     $$
     R(\alpha) =
-    \begin{bmatrix} +\cos \alpha & -\sin \alpha \\ +\sin \alpha & -\cos \alpha
+    \begin{bmatrix} +\cos \alpha & -\sin \alpha \\ +\sin \alpha & +\cos \alpha
     \end{bmatrix}
     $$
 
@@ -2346,7 +2346,7 @@ def _(mo):
     mo.md(r"""
     ### Solution
 
-    Differentiating the expression for $\ddot h$ gives
+    Differentiating the expression for \(\ddot h\) gives
 
     $$
     h^{(3)} =
@@ -2356,7 +2356,75 @@ def _(mo):
     \end{bmatrix}.
     $$
 
-    Using $\ddot z = v_1$ and $\ddot\theta = v_2/z$, one more derivative gives
+    Now differentiate each component once more. For the first component:
+
+    $$
+    \begin{aligned}
+    h_x^{(4)}
+    &=
+    \frac{d}{dt}\left(
+    \frac{\dot z}{M}\sin\theta
+    +\frac{z}{M}\cos\theta\,\dot\theta
+    \right)\\
+    &=
+    \frac{\ddot z}{M}\sin\theta
+    +\frac{\dot z}{M}\cos\theta\,\dot\theta
+    +\frac{\dot z}{M}\cos\theta\,\dot\theta
+    -\frac{z}{M}\sin\theta\,\dot\theta^2
+    +\frac{z}{M}\cos\theta\,\ddot\theta.
+    \end{aligned}
+    $$
+
+    Therefore,
+
+    $$
+    h_x^{(4)}
+    =
+    \frac{1}{M}
+    \left[
+    (\ddot z-z\dot\theta^2)\sin\theta
+    +(2\dot z\dot\theta+z\ddot\theta)\cos\theta
+    \right].
+    $$
+
+    For the second component:
+
+    $$
+    \begin{aligned}
+    h_y^{(4)}
+    &=
+    \frac{d}{dt}\left(
+    -\frac{\dot z}{M}\cos\theta
+    +\frac{z}{M}\sin\theta\,\dot\theta
+    \right)\\
+    &=
+    -\frac{\ddot z}{M}\cos\theta
+    +\frac{\dot z}{M}\sin\theta\,\dot\theta
+    +\frac{\dot z}{M}\sin\theta\,\dot\theta
+    +\frac{z}{M}\cos\theta\,\dot\theta^2
+    +\frac{z}{M}\sin\theta\,\ddot\theta.
+    \end{aligned}
+    $$
+
+    Thus,
+
+    $$
+    h_y^{(4)}
+    =
+    \frac{1}{M}
+    \left[
+    -(\ddot z-z\dot\theta^2)\cos\theta
+    +(2\dot z\dot\theta+z\ddot\theta)\sin\theta
+    \right].
+    $$
+
+    Using the auxiliary dynamics
+
+    $$
+    \ddot z=v_1,\qquad \ddot\theta=\frac{v_2}{z},
+    $$
+
+    we obtain
 
     $$
     h^{(4)}
@@ -2366,6 +2434,40 @@ def _(mo):
     \sin\theta & \cos\theta\\
     -\cos\theta & \sin\theta
     \end{bmatrix}
+    \begin{bmatrix}
+    v_1-z\dot\theta^2\\
+    2\dot z\dot\theta+v_2
+    \end{bmatrix}.
+    $$
+
+    With the corrected definition
+
+    $$
+    R(\alpha)=
+    \begin{bmatrix}
+    \cos\alpha & -\sin\alpha\\
+    \sin\alpha & +\cos\alpha
+    \end{bmatrix},
+    $$
+
+    we have
+
+    $$
+    R\left(\theta-\frac{\pi}{2}\right)
+    =
+    \begin{bmatrix}
+    \sin\theta & \cos\theta\\
+    -\cos\theta & \sin\theta
+    \end{bmatrix}.
+    $$
+
+    Hence the compact expression is
+
+    $$
+    h^{(4)}
+    =
+    \frac{1}{M}
+    R\left(\theta-\frac{\pi}{2}\right)
     \begin{bmatrix}
     v_1-z\dot\theta^2\\
     2\dot z\dot\theta+v_2
@@ -2394,56 +2496,34 @@ def _(mo):
     mo.md(r"""
     ### Solution
 
-    From the previous result, we have
+    From the previous result,
 
     $$
     h^{(4)}
     =
     \frac{1}{M}
-    A(\theta)
+    R\left(\theta-\frac{\pi}{2}\right)
     \begin{bmatrix}
     v_1-z\dot\theta^2\\
     2\dot z\dot\theta+v_2
-    \end{bmatrix},
-    $$
-
-    where
-
-    $$
-    A(\theta)
-    =
-    \begin{bmatrix}
-    \sin\theta & \cos\theta\\
-    -\cos\theta & \sin\theta
     \end{bmatrix}.
     $$
 
-    The matrix \(A(\theta)\) is orthogonal, since
+    Since \(R(\theta-\pi/2)\) is a rotation matrix, it is orthogonal:
 
     $$
-    A(\theta)^T A(\theta)=I.
+    R\left(\theta-\frac{\pi}{2}\right)^T
+    R\left(\theta-\frac{\pi}{2}\right)
+    = I.
     $$
 
-    Therefore, to impose
+    To impose the desired fourth-order dynamics
 
     $$
     h^{(4)}=u,
     $$
 
-    we need
-
-    $$
-    \frac{1}{M}
-    A(\theta)
-    \begin{bmatrix}
-    v_1-z\dot\theta^2\\
-    2\dot z\dot\theta+v_2
-    \end{bmatrix}
-    =
-    u.
-    $$
-
-    Multiplying by \(M A(\theta)^T\), we obtain
+    we therefore need
 
     $$
     \begin{bmatrix}
@@ -2451,23 +2531,14 @@ def _(mo):
     2\dot z\dot\theta+v_2
     \end{bmatrix}
     =
-    M A(\theta)^T u.
+    M R\left(\theta-\frac{\pi}{2}\right)^T u.
     $$
 
-    Let
+    Equivalently, define
 
     $$
-    w =
-    M A(\theta)^T u.
-    $$
-
-    Then
-
-    $$
-    \begin{bmatrix}
-    v_1-z\dot\theta^2\\
-    2\dot z\dot\theta+v_2
-    \end{bmatrix}
+    w=
+    M R\left(\theta-\frac{\pi}{2}\right)^T u
     =
     \begin{bmatrix}
     w_1\\
@@ -2475,23 +2546,14 @@ def _(mo):
     \end{bmatrix}.
     $$
 
-    Hence,
+    Then
 
     $$
-    v_1 = z\dot\theta^2 + w_1,
+    v_1=z\dot\theta^2+w_1,\qquad
+    v_2=-2\dot z\dot\theta+w_2.
     $$
 
-    and
-
-    $$
-    v_2 = -2\dot z\dot\theta + w_2.
-    $$
-
-    With this choice of \(v_1\) and \(v_2\), we obtain exactly
-
-    $$
-    h^{(4)} = u.
-    $$
+    This yields exactly \(h^{(4)}=u\).
     """)
     return
 
@@ -2519,7 +2581,6 @@ def _(M, g, l, np):
         d3h_x = (dz / M) * np.sin(theta) + (z / M) * np.cos(theta) * dtheta
         d3h_y = -(dz / M) * np.cos(theta) + (z / M) * np.sin(theta) * dtheta
         return np.array([h_x, h_y, dh_x, dh_y, d2h_x, d2h_y, d3h_x, d3h_y], dtype=float)
-
 
     return
 
