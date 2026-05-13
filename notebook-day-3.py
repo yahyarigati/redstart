@@ -2387,6 +2387,34 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    ### Solution
+
+    Since \(R(\theta-\pi/2)\) is orthogonal, we can impose \(h^{(4)}=u\) by setting
+
+    $$
+    \begin{bmatrix}
+    v_1-z\dot\theta^2\\
+    2\dot z\dot\theta+v_2
+    \end{bmatrix}
+    =
+    M R\left(\theta-\frac{\pi}{2}\right)^T u.
+    $$
+
+    Equivalently, if \(w=M R(\theta-\pi/2)^Tu\), then
+
+    $$
+    v_1=z\dot\theta^2+w_1,\qquad
+    v_2=-2\dot z\dot\theta+w_2.
+    $$
+
+    This yields exactly \(h^{(4)}=u\).
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 🧩 State to Derivatives of the Output
 
     Implement a function `Tr` of `x, dx, y, dy, theta, dtheta, z, dz` that returns `h_x, h_y, dh_x, dh_y, d2h_x, d2h_y, d3h_x, d3h_y`.
